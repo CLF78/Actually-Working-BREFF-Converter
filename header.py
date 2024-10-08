@@ -3,15 +3,15 @@
 # header.py
 # Binary file header definitions
 
-from dataclasses import dataclass, field, Field
-from common import BaseBinary, IGNORE_JSON, STRUCT, UNROLL_CONTENT, OVERRIDE_NAME
+from dataclasses import dataclass, Field
+from common.common import BaseBinary, fieldex
 from project import EffectProject
 
 @dataclass
 class BinaryBlockHeader(BaseBinary):
-    magic: bytes = field(default=b'REFF', metadata=IGNORE_JSON | STRUCT('4s'))
-    block_size: int = field(default=0, metadata=IGNORE_JSON | STRUCT('I'))
-    project: EffectProject = field(kw_only=True, default=None, metadata=UNROLL_CONTENT)
+    magic: bytes = fieldex('4s', ignore_json=True, default=b'REFF')
+    block_size: int = fieldex('I', ignore_json=True)
+    project: EffectProject = fieldex(unroll_content=True)
 
     def to_bytes(self) -> bytes:
 
@@ -38,13 +38,13 @@ class BinaryBlockHeader(BaseBinary):
 
 @dataclass
 class BinaryFileHeader(BaseBinary):
-    magic: bytes = field(default=b'REFF', metadata=IGNORE_JSON | STRUCT('4s'))
-    bom: int = field(default=0xFEFF, metadata=IGNORE_JSON | STRUCT('H'))
-    version: int = field(default=9, metadata=STRUCT('H'))
-    file_length: int = field(default=0, metadata=IGNORE_JSON | STRUCT('I'))
-    header_length: int = field(default=16, metadata=IGNORE_JSON | STRUCT('H'))
-    block_count: int = field(default=0, metadata=IGNORE_JSON | STRUCT('H'))
-    blocks: list[BinaryBlockHeader] = field(kw_only=True, default_factory=list, metadata=OVERRIDE_NAME('projects'))
+    magic: bytes = fieldex('4s', ignore_json=True, default=b'REFF')
+    bom: int = fieldex('H', ignore_json=True, default=0xFEFF)
+    version: int = fieldex('H')
+    file_length: int = fieldex('I', ignore_json=True)
+    header_length: int = fieldex('H', ignore_json=True)
+    block_count: int = fieldex('H', ignore_json=True)
+    blocks: list[BinaryBlockHeader] = fieldex(export_name='projects', default_factory=list)
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'BinaryFileHeader':
@@ -53,7 +53,7 @@ class BinaryFileHeader(BaseBinary):
         header = super().from_bytes(data, offset, parent)
 
         # Parse block headers after the main file header
-        offset = header.size()
+        offset = header.size(None, 'block_count')
         for _ in range(header.block_count):
             block = BinaryBlockHeader.from_bytes(data, offset, header)
             header.blocks.append(block)

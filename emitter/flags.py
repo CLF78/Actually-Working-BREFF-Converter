@@ -4,9 +4,9 @@
 # Emitter flag definitions
 
 from enum import Enum, Flag
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from common import BaseBinary, STRUCT
+from common.common import BaseBinary, fieldex
 
 class CommonFlag(Flag):
     SyncChildrenLifetime       = 1 << 0  # Child elements are also deleted when the emitter is deleted
@@ -78,6 +78,6 @@ class DrawFlag(Flag):
 # TODO fix type specific flags
 @dataclass
 class EmitterFlags(BaseBinary):
-    type_specific_flag: TypeSpecificFlag = field(default=0, metadata=STRUCT('B'))
-    emit_flag: EmitFlag = field(default=0, metadata=STRUCT('H'))
-    shape: EmitterShape = field(default=0, metadata=STRUCT('B'))
+    type_specific_flag: TypeSpecificFlag = fieldex('B')
+    emit_flag: EmitFlag = fieldex('H')
+    shape: EmitterShape = fieldex('B')

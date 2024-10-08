@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
 # colorinput.py
-# ColorInput definitions
+# ColorInput structure
 
-from enum import Enum, auto
-from dataclasses import dataclass, field
-from common import BaseBinary, STRUCT
+from enum import auto
+from dataclasses import dataclass
+from common.common import BaseBinary, CEnum, fieldex
 
-class RasterColor(Enum):
+class RasterColor(CEnum):
     Null = 0
     Lighting = auto()
 
 
-class TevColor(Enum):
-    Null = 0
+class TevColor(CEnum):
+    Null = auto()
     Color1Primary = auto()
     Color1Secondary = auto()
     Color2Primary = auto()
@@ -24,11 +24,11 @@ class TevColor(Enum):
 
 @dataclass
 class ColorInput(BaseBinary):
-    ras_color: RasterColor = field(default=0, metadata=STRUCT('B'))
-    tev_color1: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_color2: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_color3: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_k_color1: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_k_color2: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_k_color3: TevColor = field(default=0, metadata=STRUCT('B'))
-    tev_k_color4: TevColor = field(default=0, metadata=STRUCT('B'))
+    ras_color: RasterColor = fieldex('B')
+    tev_color1: TevColor = fieldex('B')
+    tev_color2: TevColor = fieldex('B')
+    tev_color3: TevColor = fieldex('B')
+    tev_k_color1: TevColor = fieldex('B')
+    tev_k_color2: TevColor = fieldex('B')
+    tev_k_color3: TevColor = fieldex('B')
+    tev_k_color4: TevColor = fieldex('B')

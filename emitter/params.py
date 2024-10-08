@@ -3,10 +3,10 @@
 # params.py
 # Emitter parameter definitions
 
-from dataclasses import dataclass, field
-from emitter.flags import EmitterShape
+from dataclasses import dataclass
 
-from common import BaseBinary, IGNORE_JSON, STRUCT
+from common.common import BaseBinary, fieldex
+from emitter.flags import EmitterShape
 
 class Params(BaseBinary):
     @classmethod
@@ -40,39 +40,39 @@ class Params(BaseBinary):
 
 @dataclass
 class PointParams(BaseBinary):
-    nothing: int = field(default=0, metadata=IGNORE_JSON | STRUCT('23xB'))
+    nothing: int = fieldex('23xB', ignore_json=True, default=0)
 
 
 @dataclass
 class DiscParams(BaseBinary):
-    x_size: float = field(default=0.0, metadata=STRUCT('f'))
-    inner_radius: float = field(default=0.0, metadata=STRUCT('f'))
-    angle_start: float = field(default=0.0, metadata=STRUCT('f'))
-    angle_end: float = field(default=0.0, metadata=STRUCT('f'))
-    z_size: float = field(default=0.0, metadata=STRUCT('f4x'))
+    x_size: float = fieldex('f')
+    inner_radius: float = fieldex('f')
+    angle_start: float = fieldex('f')
+    angle_end: float = fieldex('f')
+    z_size: float = fieldex('f4x')
 
 
 @dataclass
 class LineParams(BaseBinary):
-    length: float = field(default=0.0, metadata=STRUCT('f'))
-    x_rot: float = field(default=0.0, metadata=STRUCT('f'))
-    y_rot: float = field(default=0.0, metadata=STRUCT('f'))
-    z_rot: float = field(default=0.0, metadata=STRUCT('f8x'))
+    length: float = fieldex('f')
+    x_rot: float = fieldex('f')
+    y_rot: float = fieldex('f')
+    z_rot: float = fieldex('f8x')
 
 
 @dataclass
 class CubeParams(BaseBinary):
-    x_size: float = field(default=0.0, metadata=STRUCT('f'))
-    y_size: float = field(default=0.0, metadata=STRUCT('f'))
-    z_size: float = field(default=0.0, metadata=STRUCT('f'))
-    inner_radius: float = field(default=0.0, metadata=STRUCT('f8x'))
+    x_size: float = fieldex('f')
+    y_size: float = fieldex('f')
+    z_size: float = fieldex('f')
+    inner_radius: float =  fieldex('f8x')
 
 
 @dataclass
 class CylindereSphereTorusParams(BaseBinary):
-    x_size: float = field(default=0.0, metadata=STRUCT('f'))
-    inner_radius: float = field(default=0.0, metadata=STRUCT('f'))
-    angle_start: float = field(default=0.0, metadata=STRUCT('f'))
-    angle_end: float = field(default=0.0, metadata=STRUCT('f'))
-    y_size: float = field(default=0.0, metadata=STRUCT('f'))
-    z_size: float = field(default=0.0, metadata=STRUCT('f'))
+    x_size: float = fieldex('f')
+    inner_radius: float = fieldex('f')
+    angle_start: float = fieldex('f')
+    angle_end: float = fieldex('f')
+    y_size: float = fieldex('f')
+    z_size: float = fieldex('f')

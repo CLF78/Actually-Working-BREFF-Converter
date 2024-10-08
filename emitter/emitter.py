@@ -3,19 +3,20 @@
 # emitter.py
 # Emitter entry definitions
 
-from enum import Enum, auto
-from dataclasses import dataclass, field
+from enum import auto
+from dataclasses import dataclass
 
-from common import BaseBinary, VEC3, IGNORE_JSON, STRUCT, UNROLL_CONTENT
+from common.common import BaseBinary, CEnum, fieldex
+from common.nw4r import VEC3
 from emitter.flags import CommonFlag, EmitterFlags, DrawFlag
-from emitter.gx import GXCompare, GXAlphaOp, GXBlendMode, GXBlendFactor, GXLogicOp
+from common.gx import GXCompare, GXAlphaOp, GXBlendMode, GXBlendFactor, GXLogicOp
 from emitter.params import Params
 from emitter.tev import TEVStages
 from emitter.colorinput import ColorInput
 from emitter.lighting import Lighting
 
-class AlphaFlickType(Enum):
-    NoFlick = 0
+class AlphaFlickType(CEnum):
+    NoFlick = auto()
     Triangle = auto()
     Sawtooth1 = auto()
     Sawtooth2 = auto()
@@ -27,148 +28,148 @@ class AlphaFlickType(Enum):
 class EmitterData(BaseBinary):
 
     # Size of emitter
-    data_size: int = field(default=0, metadata=IGNORE_JSON | STRUCT('4xI'))
+    data_size: int = fieldex('4xI', ignore_json=True)
 
     # Various flags
-    common_flag: CommonFlag = field(default=0, metadata=STRUCT('I'))
+    common_flag: CommonFlag = fieldex('I')
 
     # Emitter shape and other flags
-    emitter_flags: EmitterFlags = field(default=None, metadata=UNROLL_CONTENT)
+    emitter_flags: EmitterFlags = fieldex(unroll_content=True)
 
     # Maximum emit time
-    emit_lifetime: int = field(default=0, metadata=STRUCT('H'))
+    emit_lifetime: int = fieldex('H')
 
     # Particle lifetime
-    particle_lifetime: int = field(default=0, metadata=STRUCT('H'))
+    particle_lifetime: int = fieldex('H')
 
     # Particle lifetime randomness
-    particle_lifetime_randomness: int = field(default=0, metadata=STRUCT('b'))
+    particle_lifetime_randomness: int = fieldex('b')
 
     # Ratio of the influence on the Following child particle's translation
-    inherit_child_particle_translate: int = field(default=0, metadata=STRUCT('b'))
+    inherit_child_particle_translate: int = fieldex('b')
 
     # Emission interval randomness
-    emission_interval_randomness: int = field(default=0, metadata=STRUCT('b'))
+    emission_interval_randomness: int = fieldex('b')
 
     # Emission volume randomness
-    emission_volume_randomness: int = field(default=0, metadata=STRUCT('b'))
+    emission_volume_randomness: int = fieldex('b')
 
     # Emission volume
-    emission_volume: float = field(default=0.0, metadata=STRUCT('f'))
+    emission_volume: float = fieldex('f')
 
     # Emit start time
-    emission_start_time: int = field(default=0, metadata=STRUCT('H'))
+    emission_start_time: int = fieldex('H')
 
     # Calculate Elapsed Frames value
-    emission_past: int = field(default=0, metadata=STRUCT('H'))
+    emission_past: int = fieldex('H')
 
     # Emission interval
-    emission_interval: int = field(default=0, metadata=STRUCT('H'))
+    emission_interval: int = fieldex('H')
 
     # Ratio of the effect on translation of an inherited particle
-    inherit_particle_translate: int = field(default=0, metadata=STRUCT('b'))
+    inherit_particle_translate: int = fieldex('b')
 
     # Ratio of the influence on the Following child emitter's translation
-    inherit_child_emit_translate: int = field(default=0, metadata=STRUCT('b'))
+    inherit_child_emit_translate: int = fieldex('b')
 
     # Various shape-specific parameters
-    shape_params: Params = None
+    shape_params: Params = fieldex()
 
     # Number of divisions when the emitter shape is equally spaced
-    shape_divisions: int = field(default=0, metadata=STRUCT('H'))
+    shape_divisions: int = fieldex('H')
 
     # Initial velocity randomness
-    initial_velocity_randomness: int = field(default=0, metadata=STRUCT('b'))
+    initial_velocity_randomness: int = fieldex('b')
 
     # Initial momentum randomness
-    initial_momentum_randomness: int = field(default=0.0, metadata=STRUCT('b'))
+    initial_momentum_randomness: int = fieldex('b')
 
     # Speed in all directions
-    speed: float = field(default=0.0, metadata=STRUCT('f'))
+    speed: float = fieldex('f')
 
     # Y-axis diffusion speed
-    y_diffusion_speed: float = field(default=0.0, metadata=STRUCT('f'))
+    y_diffusion_speed: float = fieldex('f')
 
     # Random direction speed
-    random_dir_speed: float = field(default=0.0, metadata=STRUCT('f'))
+    random_dir_speed: float = fieldex('f')
 
     # Normal direction speed
-    normal_dir_speed: float = field(default=0.0, metadata=STRUCT('f'))
+    normal_dir_speed: float = fieldex('f')
 
     # Normal direction diffusion angle
-    normal_dir_diffusion_angle: float = field(default=0.0, metadata=STRUCT('f'))
+    normal_dir_diffusion_angle: float = fieldex('f')
 
     # Specified direction emission speed
-    specified_dir_emission_speed: float = field(default=0.0, metadata=STRUCT('f'))
+    specified_dir_emission_speed: float = fieldex('f')
 
     # Specified direction diffusion angle
-    specified_dir_diffusion_angle: float = field(default=0.0, metadata=STRUCT('f'))
+    specified_dir_diffusion_angle: float = fieldex('f')
 
     # Specified direction
-    specified_dir: VEC3 = None
+    specified_dir: VEC3 = fieldex()
 
     # Scale
-    scale: VEC3 = None
+    scale: VEC3 = fieldex()
 
     # Rotation
-    rotation: VEC3 = None
+    rotation: VEC3 = fieldex()
 
     # Translation
-    translation: VEC3 = None
+    translation: VEC3 = fieldex()
 
     # Near plane for LOD
-    near_lod_plane: int = field(default=0, metadata=STRUCT('B'))
+    near_lod_plane: int = fieldex('b')
 
     # Far plane for LOD
-    far_lod_plane: int = field(default=0, metadata=STRUCT('B'))
+    far_lod_plane: int = fieldex('b')
 
     # Minimum generation rate of LOD
-    min_lod_emit_rate: int = field(default=0, metadata=STRUCT('B'))
+    min_lod_emit_rate: int = fieldex('b')
 
     # LOD alpha
-    lod_alpha: int = field(default=0, metadata=STRUCT('B'))
+    lod_alpha: int = fieldex('b')
 
     # Random seed
-    random_seed: int = field(default=0, metadata=STRUCT('I'))
+    random_seed: int = fieldex('I')
 
     # User data
-    user_data: int = field(default=0, metadata=STRUCT('Q'))
+    user_data: int = fieldex('Q')
 
     # Draw flag
-    draw_flags: DrawFlag = field(default=0, metadata=STRUCT('H'))
+    draw_flags: DrawFlag = fieldex('H')
 
     # Alpha compare operations and operator
-    alpha_compare_1: GXCompare = field(default=0, metadata=STRUCT('B'))
-    alpha_compare_2: GXCompare = field(default=0, metadata=STRUCT('B'))
-    alpha_compare_operator: GXAlphaOp = field(default=0, metadata=STRUCT('B'))
+    alpha_compare_1: GXCompare = fieldex('b')
+    alpha_compare_2: GXCompare = fieldex('b')
+    alpha_compare_operator: GXAlphaOp = fieldex('b')
 
     # TEV stages
-    tev_stages: TEVStages = field(default=None, metadata=UNROLL_CONTENT)
+    tev_stages: TEVStages = fieldex(unroll_content=True)
 
     # Blend information
-    blend_type: GXBlendMode = field(default=0, metadata=STRUCT('B'))
-    blend_src_factor: GXBlendFactor = field(default=0, metadata=STRUCT('B'))
-    blend_dst_factor: GXBlendFactor = field(default=0, metadata=STRUCT('B'))
-    blend_operation: GXLogicOp = field(default=0, metadata=STRUCT('B'))
+    blend_type: GXBlendMode = fieldex('b')
+    blend_src_factor: GXBlendFactor = fieldex('b')
+    blend_dst_factor: GXBlendFactor = fieldex('b')
+    blend_operation: GXLogicOp = fieldex('b')
 
     # Color and alpha inputs
-    color_input: ColorInput = None
-    alpha_input: ColorInput = None
+    color_input: ColorInput = fieldex()
+    alpha_input: ColorInput = fieldex()
 
     # Z Compare Function
-    z_compare_func: GXCompare = field(default=0, metadata=STRUCT('B'))
+    z_compare_func: GXCompare = fieldex('b')
 
     # Alpha swing type
-    alpha_swing_type: AlphaFlickType = field(default=0, metadata=STRUCT('B'))
+    alpha_swing_type: AlphaFlickType = fieldex('b')
 
     # Alpha swing cycle period
-    alpha_swing_cycle: int = field(default=0, metadata=STRUCT('H'))
+    alpha_swing_cycle: int = fieldex('H')
 
     # Alpha swing randomness
-    alpha_swing_randomness: int = field(default=0, metadata=STRUCT('B'))
+    alpha_swing_randomness: int = fieldex('b')
 
     # Alpha swing amplitude
-    alpha_swing_amplitude: int = field(default=0, metadata=STRUCT('B'))
+    alpha_swing_amplitude: int = fieldex('b')
 
     # Lighting
-    lighting: Lighting = None
+    lighting: Lighting = fieldex()

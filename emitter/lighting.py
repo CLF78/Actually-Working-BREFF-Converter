@@ -1,30 +1,31 @@
 #!/usr/bin/env python3
 
 # lighting.py
-# Lighting definitions
+# Emitter lighting definitions
 
-from enum import Enum, auto
-from dataclasses import dataclass, field
-from common import BaseBinary, VEC3, STRUCT
-from emitter.gx import GXColor
+from enum import auto
+from dataclasses import dataclass
+from common.common import BaseBinary, CEnum, fieldex
+from common.nw4r import VEC3
+from common.gx import GXColor
 
-class LightingMode(Enum):
-    Off = 0
+class LightingMode(CEnum):
+    Off = auto()
     Simple = auto()
     Hardware = auto()
 
 
-class LightingType(Enum):
-    NoLighting = 0
+class LightingType(CEnum):
+    NoLighting = auto()
     Ambient = auto()
     Point = auto()
 
 
 @dataclass
 class Lighting(BaseBinary):
-    mode: LightingMode = field(default=0, metadata=STRUCT('B'))
-    type: LightingType = field(default=0, metadata=STRUCT('B'))
-    ambient_color: GXColor = None
-    diffuse_color: GXColor = None
-    radius: float = field(default=0.0, metadata=STRUCT('f'))
-    position: VEC3 = None
+    mode: LightingMode = fieldex('B')
+    type: LightingType = fieldex('B')
+    ambient_color: GXColor = fieldex()
+    diffuse_color: GXColor = fieldex()
+    radius: float = fieldex('f')
+    position: VEC3 = fieldex()

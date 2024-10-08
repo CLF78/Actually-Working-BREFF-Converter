@@ -9,35 +9,69 @@ from typing import Optional, TypeVar, Type, get_origin
 from enum import Flag, Enum
 
 T = TypeVar('T', bound='BaseBinary')
-IGNORE_JSON = {'ignore_json': True}       # Ignores the field when exporting to/reading from JSON
-IGNORE_BINARY = {'ignore_binary': True}   # Ignores the field when exporting to/reading from binary
-STRUCT = lambda s: {'struct_format': struct.Struct(f'>{s}')} # Defines the structure for the field (only for basic data types)
-OVERRIDE_NAME = lambda s: {'override': s} # Overrides a field name in the exported JSON format
-UNROLL_CONTENT = {'unroll_content': True} # Merges the field contents instead of putting them under a key (dataclass only)
-ALIGN_PAD = lambda s: {'align_pad': s}    # Aligns the field by s bytes
+ALIGN_PAD = 'align_pad'
+EXPORT_NAME = 'export_name'
+IGNORE_JSON = 'ignore_json'
+IGNORE_BINARY = 'ignore_binary'
+STRUCT = 'struct'
+UNROLL_CONTENT = 'unroll_content'
 
 # Aligns an integer to the given value
 def align(value: int, alignment: int) -> int:
-    return value + alignment - value % alignment
+    return (value + alignment - 1) & ~(alignment - 1)
+
 
 # Pads a byte array to the given alignment
 def pad(data: bytes, alignment: int):
-    aligned_size = align(len(data), alignment)
-    return data if not aligned_size else data + b'\0' * aligned_size
+    length = len(data)
+    aligned_size = align(length, alignment)
+    return data + b'\0' * (length - aligned_size)
+
 
 # Convert snake_case to camelCase
 def snake_to_camel(snake_str: str) -> str:
     components = snake_str.split('_')
     return components[0] + ''.join(x.title() for x in components[1:])
 
+
 # Utility function to convert camelCase to snake_case
 def camel_to_snake(camel_str: str) -> str:
     return ''.join(['_' + c.lower() if c.isupper() else c for c in camel_str]).lstrip('_')
 
 
+# Generates an extended field with the given settings
+def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: bool = False,
+            unroll_content: bool = False, align_pad: int = 1, export_name: str = None, **kwargs) -> Field:
+
+    # Replace any given metadata
+    kwargs['metadata'] = {
+        STRUCT: struct.Struct(f'>{structure}') if structure else None,
+        IGNORE_BINARY: ignore_binary,
+        IGNORE_JSON: ignore_json,
+        UNROLL_CONTENT: unroll_content,
+        ALIGN_PAD: max(1, align_pad),
+        EXPORT_NAME: export_name
+    }
+
+    # Replace kw_only argument
+    kwargs['kw_only'] = True
+
+    # Replace init argument if necessary
+    kwargs['init'] = False
+    return field(**kwargs)
+
+
+# An enum whose value starts from zero
+class CEnum(Enum):
+    @classmethod
+    def _generate_next_value_(cls, name, start, count, last_values):
+        return count if count not in last_values else count + 1
+
+
+# Base class for all structures to allow recursive data packing/unpacking
 @dataclass
 class BaseBinary:
-    parent: Optional[T] = field(default=None, metadata=IGNORE_JSON | IGNORE_BINARY)
+    parent: Optional[T] = fieldex(ignore_binary=True, ignore_json=True)
 
     @classmethod
     def from_bytes(cls: Type[T], data: bytes, offset: int = 0, parent: Optional[T] = None) -> T:
@@ -58,12 +92,12 @@ class BaseBinary:
             field_meta = field.metadata
 
             # If the field is marked as ignored, skip it
-            if field_meta.get('ignore_binary', False):
+            if field_meta[IGNORE_BINARY]:
                 continue
 
             # Get the struct format, if it has one unpack it and set the field
             # Also works for enums
-            struct_format: struct.Struct = field_meta.get('struct_format')
+            struct_format: struct.Struct = field_meta[STRUCT]
             if struct_format:
                 field_size = struct_format.size
                 field_value = field_type(struct_format.unpack_from(data, offset)[0])
@@ -83,9 +117,8 @@ class BaseBinary:
                 setattr(obj, field_name, field_value)
                 offset = value_end + 1
 
-            # If the field is padded, skip the necessary bytes
-            if field_meta.get('align_pad', 0):
-                offset = align(offset, field_meta['align_pad'])
+            # Skip alignment bytes
+            offset = align(offset, field_meta[ALIGN_PAD])
 
             # Validate the field
             obj.validate(len(data), field)
@@ -110,11 +143,11 @@ class BaseBinary:
             field_value = getattr(self, field_name)
 
             # Ignore the field if it should not be exported
-            if field_meta.get('ignore_binary', False):
+            if field_meta[IGNORE_BINARY]:
                 continue
 
             # If it has a format, use it for packing
-            struct_format: struct.Struct = field_meta.get('struct_format')
+            struct_format: struct.Struct = field_meta[STRUCT]
             if struct_format:
                 result += struct_format.pack(field_value)
 
@@ -126,9 +159,8 @@ class BaseBinary:
             elif isinstance(field_value, str):
                 result += field_value.encode('ascii') + b'\0'
 
-            # If the field is padded, do so
-            if field_meta.get('align_pad', 0):
-                result = pad(result, field_meta['align_pad'])
+            # Add alignment padding
+            result = pad(result, field_meta[ALIGN_PAD])
 
         # Return final result
         return result
@@ -152,17 +184,17 @@ class BaseBinary:
             field_meta = field.metadata
 
             # Skip the field if it should be ignored
-            if field_meta.get('ignore_json', False):
+            if field_meta[IGNORE_JSON]:
                 continue
 
             # If the field is to be read with a different name, do so
-            if field_meta.get('override'):
-                field_json_name = field_meta['override']
+            if field_meta[EXPORT_NAME]:
+                field_json_name = field_meta[EXPORT_NAME]
             else:
                 field_json_name = snake_to_camel(field_name)
 
             # Check if the data is there
-            if field_json_name in data or field_meta.get('unroll_content', False):
+            if field_json_name in data or field_meta[UNROLL_CONTENT]:
 
                 # If it's a dataclass, construct it recursively
                 if issubclass(field_type, BaseBinary):
@@ -254,12 +286,12 @@ class BaseBinary:
             field_type = field.type
 
             # If the field must not be exported, skip it
-            if field_meta.get('ignore_json', False):
+            if field_meta[IGNORE_JSON]:
                 continue
 
             # If the field is to be read with a different name, do so
-            if field_meta.get('override'):
-                field_json_name = field_meta['override']
+            if field_meta[EXPORT_NAME]:
+                field_json_name = field_meta[EXPORT_NAME]
             else:
                 field_json_name = snake_to_camel(field_name)
 
@@ -271,12 +303,12 @@ class BaseBinary:
                 value = field_value.to_json()
 
                 # If it needs to be unrolled, simply merge the result into the given dictionary
-                if field_meta.get('unroll_content', False):
+                if field_meta[UNROLL_CONTENT]:
                     result |= value
 
                 # Else just store it under the key
                 else:
-                    result[field_json_name] = field_value.to_json()
+                    result[field_json_name] = value
 
             # If it's a list, convert each value and store the resulting list
             elif isinstance(field_value, list):
@@ -302,25 +334,34 @@ class BaseBinary:
         # Return resulting dict
         return result
 
-    def size(self) -> int:
+    def size(self, start_field: str = None, end_field: str = None) -> int:
         """
         Get the size of the structure in bytes
         """
 
         # Initialize loop
         size = 0
+        found_start_field = start_field is None
+
         for field in fields(self):
 
             # Get field data
             field_name = field.name
             field_meta = field.metadata
 
-            # Ignore fields with the ignore binary flag and kw_only fields
-            if field_meta.get('ignore_binary', False) or field.kw_only:
+            # Skip fields until the starting one is found
+            if not found_start_field:
+                if field_name == start_field:
+                    found_start_field = True
+                else:
+                    continue
+
+            # Ignore fields with the ignore binary flag
+            if field_meta[IGNORE_BINARY]:
                 continue
 
             # If the field has an associated structure, use it to calculate the size
-            struct_format: struct.Struct = field_meta.get('struct_format')
+            struct_format: struct.Struct = field_meta[STRUCT]
             if struct_format:
                 size += struct_format.size
 
@@ -336,15 +377,15 @@ class BaseBinary:
                 elif isinstance(field_value, str):
                     size += len(field_value) + 1
 
+            # Align size
+            size = align(size, field_meta[ALIGN_PAD])
+
+            # If we have reached the last field, exit the loop
+            if field_name == end_field:
+                break
+
         # Return result
         return size
 
     def validate(self, data_length: int, field: Field) -> None:
         return
-
-
-@dataclass
-class VEC3(BaseBinary):
-    x: float = field(default=0.0, metadata=STRUCT('f'))
-    y: float = field(default=0.0, metadata=STRUCT('f'))
-    z: float = field(default=0.0, metadata=STRUCT('f'))

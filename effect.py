@@ -3,23 +3,23 @@
 # effect.py
 # Effect entry definitions
 
-from dataclasses import dataclass, field, Field
+from dataclasses import dataclass, Field
 
-from common import BaseBinary, IGNORE_BINARY, IGNORE_JSON, STRUCT, UNROLL_CONTENT
+from common.common import BaseBinary, fieldex
 from emitter.emitter import EmitterData
 
 @dataclass
 class EffectData(BaseBinary):
-    emitter: EmitterData = None
+    emitter: EmitterData = fieldex()
 
 
 @dataclass
 class Effect(BaseBinary):
-    name_len: int = field(default=0, metadata=IGNORE_JSON | STRUCT('H'))
-    name: str = ''
-    data_offset: int = field(default=0, metadata=IGNORE_JSON | STRUCT('I'))
-    data_size: int = field(default=0, metadata=IGNORE_JSON | STRUCT('I'))
-    data: EffectData = field(kw_only=True, default=None, metadata=IGNORE_BINARY | UNROLL_CONTENT)
+    name_len: int = fieldex('H', ignore_json=True)
+    name: str = fieldex()
+    data_offset: int = fieldex('I', ignore_json=True)
+    data_size: int = fieldex('I', ignore_json=True)
+    data: EffectData = fieldex(ignore_binary=True, unroll_content=True)
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'Effect':

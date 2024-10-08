@@ -3,12 +3,12 @@
 # gx.py
 # GX definitions
 
-from enum import Enum, auto
-from dataclasses import dataclass, field
-from common import BaseBinary, IGNORE_BINARY, IGNORE_JSON, STRUCT, UNROLL_CONTENT
+from enum import auto
+from dataclasses import dataclass
+from common.common import BaseBinary, CEnum, fieldex
 
-class GXCompare(Enum):
-	Never = 0
+class GXCompare(CEnum):
+	Never = auto()
 	Less = auto()
 	LessOrEqual = auto()
 	Equal = auto()
@@ -18,15 +18,15 @@ class GXCompare(Enum):
 	Always = auto()
 
 
-class GXAlphaOp(Enum):
-    And = 0
+class GXAlphaOp(CEnum):
+    And = auto()
     Or = auto()
     ExclusiveOr = auto()
     InverseExclusiveOr = auto()
 
 
-class GXTevColorArg(Enum):
-	OutputColor = 0
+class GXTevColorArg(CEnum):
+	OutputColor = auto()
 	OutputAlpha = auto()
 	Color0 = auto()
 	Alpha0 = auto()
@@ -47,8 +47,8 @@ class GXTevColorArg(Enum):
 	TextureColorBlue = auto()
 
 
-class GXTevAlphaArg(Enum):
-	OutputAlpha = 0
+class GXTevAlphaArg(CEnum):
+	OutputAlpha = auto()
 	Alpha0 = auto()
 	Alpha1 = auto()
 	Alpha2 = auto()
@@ -58,8 +58,8 @@ class GXTevAlphaArg(Enum):
 	Zero = auto()
 
 
-class GXTevOp(Enum):
-	Add = 0
+class GXTevOp(CEnum):
+	Add = auto()
 	Subtract = auto()
 	CompR8Greater = auto()
 	CompR8Equal = auto()
@@ -71,8 +71,8 @@ class GXTevOp(Enum):
 	CompRGB8Equal = auto()
 
 
-class GXTevOpAlpha(Enum):
-	Add = 0
+class GXTevOpAlpha(CEnum):
+	Add = auto()
 	Subtract = auto()
 	CompR8Greater = auto()
 	CompR8Equal = auto()
@@ -84,35 +84,35 @@ class GXTevOpAlpha(Enum):
 	CompA8Equal = auto()
 
 
-class GXTevBias(Enum):
-	Zero = 0
+class GXTevBias(CEnum):
+	Zero = auto()
 	AddHalf = auto()
 	SubHalf = auto()
 
 
-class GXTevScale(Enum):
-	MultiplyBy1 = 0
+class GXTevScale(CEnum):
+	MultiplyBy1 = auto()
 	MultiplyBy2 = auto()
 	MultiplyBy4 = auto()
 	DivideBy2 = auto()
 
 
-class GXTevRegID(Enum):
-	OutputColor = 0
+class GXTevRegID(CEnum):
+	OutputColor = auto()
 	Color0 = auto()
 	Color1 = auto()
 	Color2 = auto()
 
 
-class GXTevRegIDAlpha(Enum):
-	OutputAlpha = 0
+class GXTevRegIDAlpha(CEnum):
+	OutputAlpha = auto()
 	Alpha0 = auto()
 	Alpha1 = auto()
 	Alpha2 = auto()
 
 
-class GXTevKColorSel(Enum):
-	Constant1_1 = 0
+class GXTevKColorSel(CEnum):
+	Constant1_1 = auto()
 	Constant7_8 = auto()
 	Constant3_4 = auto()
 	Constant5_8 = auto()
@@ -142,8 +142,8 @@ class GXTevKColorSel(Enum):
 	ConstantColor3AAA = auto()
 
 
-class GXTevKAlphaSel(Enum):
-	Constant1_1 = 0
+class GXTevKAlphaSel(CEnum):
+	Constant1_1 = auto()
 	Constant7_8 = auto()
 	Constant3_4 = auto()
 	Constant5_8 = auto()
@@ -169,15 +169,15 @@ class GXTevKAlphaSel(Enum):
 	ConstantColor3_Alpha = auto()
 
 
-class GXBlendMode(Enum):
-	NoBlend = 0
+class GXBlendMode(CEnum):
+	NoBlend = auto()
 	Blend = auto()
 	Logic = auto()
 	Subtract = auto()
 
 
-class GXBlendFactor(Enum):
-	Zero = 0
+class GXBlendFactor(CEnum):
+	Zero = auto()
 	One = auto()
 	SourceColor = auto()
 	InverseSourceColor = auto()
@@ -187,8 +187,8 @@ class GXBlendFactor(Enum):
 	InverseDestinationAlpha = auto()
 
 
-class GXLogicOp(Enum):
-	Clear = 0
+class GXLogicOp(CEnum):
+	Clear = auto()
 	Set = auto()
 	Copy = auto()
 	InverseCopy = auto()
@@ -208,7 +208,7 @@ class GXLogicOp(Enum):
 
 @dataclass
 class GXColor(BaseBinary):
-	r: int = field(default=0, metadata=STRUCT('B'))
-	g: int = field(default=0, metadata=STRUCT('B'))
-	b: int = field(default=0, metadata=STRUCT('B'))
-	a: int = field(default=0, metadata=STRUCT('B'))
+	r: int = fieldex('B')
+	g: int = fieldex('B')
+	b: int = fieldex('B')
+	a: int = fieldex('B')
