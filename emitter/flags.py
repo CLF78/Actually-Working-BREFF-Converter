@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+
+# flags.py
+# Emitter flag definitions
+
+from enum import Enum, Flag
+from dataclasses import dataclass, field
+
+from common import BaseBinary, STRUCT
+
+class CommonFlag(Flag):
+    SyncChildrenLifetime       = 1 << 0  # Child elements are also deleted when the emitter is deleted
+    Invisible                  = 1 << 1  # Suppresses the rendering of the ParticleManager held by this emitter (does not propagate to child emitters)
+    InfiniteLifetime           = 1 << 2  # The emitter has an infinite lifetime (maximum u32 value)
+    InheritParticleScale       = 1 << 5  # Represents the Follow (particle) Scale setting
+    InheritParticleRotate      = 1 << 6  # Represents the Follow (particle) Rotate setting
+    InheritChildEmitterScale   = 1 << 7  # Represents the Follow (child/emitter generation) Scale setting
+    InheritChildEmitterRotate  = 1 << 8  # Represents the Follow (child/emitter generation) Rotate setting
+    DisableEmitterCalculations = 1 << 9  # Emitter calculations are suppressed
+    InheritParticlePivot       = 1 << 10 # Sets the parent emitter to be the center of the Follow (particle) Scale and Rotate
+    InheritChildPivot          = 1 << 11 # Sets the child emitter to be the center of the Follow Scale and Rotate (??)
+    InheritChildParticleScale  = 1 << 12 # Represents the Follow (child/particle generation) Scale setting
+    InheritChildParticleRotate = 1 << 13 # Represents the Follow (child/particle generation) Rotate setting
+    RelocateComplete           = 1 << 31 # ??
+
+
+class EmitterShape(Enum):
+    Disc     = 0
+    Line     = 1
+    Cube     = 5
+    Cylinder = 7
+    Sphere   = 8
+    Point    = 9
+    Torus    = 10
+
+
+class EmitFlag(Flag):
+    LodEnabled    = 1 << 0  # Enables LOD
+    BillboardY    = 1 << 7  # Enables Billboard Y
+    Billboard     = 1 << 8  # Enables Billboard
+    FixedInterval = 1 << 9  # Disables emitter interval randomness
+    FixedPosition = 1 << 10 # Disables emitter interval position
+    Instance      = 1 << 11 # ??
+
+
+class TypeSpecificFlag(Flag):
+    FlatDensity = 1 << 0 # Makes the density uniform (Disc, Cube, Cylinder, Sphere, Torus)
+    LinkedSize  = 1 << 1 # Links size of Y and Z to X (Cube, Sphere) or Z to X (Disc, Cylinder, Torus)
+    LineCenter  = 1 << 2 # Line only, not sure of the purpose
+
+    @staticmethod
+    def get_allowed_flags(shape: EmitterShape):
+        if shape == EmitterShape.Line:
+            return TypeSpecificFlag.LineCenter
+        elif shape != EmitterShape.Point:
+            return TypeSpecificFlag.FlatDensity | TypeSpecificFlag.LinkedSize
+        return TypeSpecificFlag(0)
+
+
+class DrawFlag(Flag):
+    ZCompareEnabled             = 1 << 0  # Z-compare is enabled
+    ZUpdateEnabled              = 1 << 1  # Z-update is enabled
+    ZCompareBeforeTex           = 1 << 2  # Z-compare is performed before texture processing
+    ClippingDisabled            = 1 << 3  # Clipping is disabled
+    UseTexture1                 = 1 << 4  # Texture 1 is to be used
+    UseTexture2                 = 1 << 5  # Texture 2 is to be used
+    UseIndirectTexture          = 1 << 6  # The indirect texture is to be used
+    IsTexture1Projection        = 1 << 7  # Texture 1 is a projection texture
+    IsTexture2Projection        = 1 << 8  # Texture 2 is a projection texture
+    IsIndirectTextureProjection = 1 << 9  # The indirect texture is a projection texture
+    Invisible                   = 1 << 10 # Drawing is disabled
+    ReverseDrawOrder            = 1 << 11 # Particles are drawn in reverse order
+    FogEnabled                  = 1 << 12 # Fog settings are to be used
+    XYLinkSize                  = 1 << 13 # X is to be used in place of Y which is the basic size of the particle
+    XYLinkScale                 = 1 << 14 # X is to be used in place of Y which is the scale of the particle
+
+
+# TODO fix type specific flags
+@dataclass
+class EmitterFlags(BaseBinary):
+    type_specific_flag: TypeSpecificFlag = field(default=0, metadata=STRUCT('B'))
+    emit_flag: EmitFlag = field(default=0, metadata=STRUCT('H'))
+    shape: EmitterShape = field(default=0, metadata=STRUCT('B'))
