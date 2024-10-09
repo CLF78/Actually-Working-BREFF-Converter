@@ -13,29 +13,29 @@ class Params(BaseBinary):
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None):
         shape = parent.emitter_flags.shape
         if shape == EmitterShape.Point:
-            return PointParams.from_bytes(data, offset)
+            return PointParams.from_bytes(data, offset, parent)
         elif shape == EmitterShape.Disc:
-            return DiscParams.from_bytes(data, offset)
+            return DiscParams.from_bytes(data, offset, parent)
         elif shape == EmitterShape.Line:
-            return LineParams.from_bytes(data, offset)
+            return LineParams.from_bytes(data, offset, parent)
         elif shape == EmitterShape.Cube:
-            return CubeParams.from_bytes(data, offset)
+            return CubeParams.from_bytes(data, offset, parent)
         else:
-            return CylindereSphereTorusParams.from_bytes(data, offset)
+            return CylindereSphereTorusParams.from_bytes(data, offset, parent)
 
-    @staticmethod
-    def from_json(data: dict):
+    @classmethod
+    def from_json(cls, data: dict, parent: BaseBinary = None):
         shape = data['shape']
         if shape == EmitterShape.Point:
-            return PointParams.from_json(data)
+            return PointParams.from_json(data, parent)
         elif shape == EmitterShape.Disc:
-            return DiscParams.from_json(data)
+            return DiscParams.from_json(data, parent)
         elif shape == EmitterShape.Line:
-            return LineParams.from_json(data)
+            return LineParams.from_json(data, parent)
         elif shape == EmitterShape.Cube:
-            return CubeParams.from_json(data)
+            return CubeParams.from_json(data, parent)
         else:
-            return CylindereSphereTorusParams.from_json(data)
+            return CylindereSphereTorusParams.from_json(data, parent)
 
 
 @dataclass

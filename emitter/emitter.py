@@ -3,25 +3,18 @@
 # emitter.py
 # Emitter entry definitions
 
-from enum import auto
 from dataclasses import dataclass
 
-from common.common import BaseBinary, CEnum, fieldex
-from common.nw4r import VEC3
+from common.common import BaseBinary, fieldex
+from common.gx import *
+from common.nw4r import VEC3, MTX23
+from emitter.alpha_swing import AlphaSwing
+from emitter.color_input import ColorInput
 from emitter.flags import CommonFlag, EmitterFlags, DrawFlag
-from common.gx import GXCompare, GXAlphaOp, GXBlendMode, GXBlendFactor, GXLogicOp
+from emitter.lighting import Lighting
+from emitter.options import ParticleType, Options
 from emitter.params import Params
 from emitter.tev import TEVStages
-from emitter.colorinput import ColorInput
-from emitter.lighting import Lighting
-
-class AlphaFlickType(CEnum):
-    NoFlick = auto()
-    Triangle = auto()
-    Sawtooth1 = auto()
-    Sawtooth2 = auto()
-    Square = auto()
-    Sine = auto()
 
 
 @dataclass
@@ -108,13 +101,9 @@ class EmitterData(BaseBinary):
     # Specified direction
     specified_dir: VEC3 = fieldex()
 
-    # Scale
+    # Scale / Rotation / Translation
     scale: VEC3 = fieldex()
-
-    # Rotation
     rotation: VEC3 = fieldex()
-
-    # Translation
     translation: VEC3 = fieldex()
 
     # Near plane for LOD
@@ -160,16 +149,22 @@ class EmitterData(BaseBinary):
     z_compare_func: GXCompare = fieldex('b')
 
     # Alpha swing type
-    alpha_swing_type: AlphaFlickType = fieldex('b')
-
-    # Alpha swing cycle period
-    alpha_swing_cycle: int = fieldex('H')
-
-    # Alpha swing randomness
-    alpha_swing_randomness: int = fieldex('b')
-
-    # Alpha swing amplitude
-    alpha_swing_amplitude: int = fieldex('b')
+    alpha_swing: AlphaSwing = fieldex()
 
     # Lighting
     lighting: Lighting = fieldex()
+
+    # Indirect texture matrix and scale
+    indirect_texture_matrix: MTX23 = fieldex()
+    indirect_texture_scale: int = fieldex('b')
+
+    # Pivots
+    pivot_x: int = fieldex('b')
+    pivot_y: int = fieldex('bx')
+
+    # Options
+    particle_type: ParticleType = fieldex('B')
+    particle_options: Options = fieldex()
+
+    # Z Offset
+    z_offset: float = fieldex('f')

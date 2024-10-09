@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# colorinput.py
+# color_input.py
 # ColorInput structure
 
 from enum import auto

@@ -56,7 +56,10 @@ class TEVStage(BaseBinary):
 class TEVStages(BaseBinary):
 
     # Number of TEV stages
-    num_tev_stages: int = fieldex('Bx', ignore_json=True)
+    num_tev_stages: int = fieldex('B', ignore_json=True)
+
+    # Obsolete flag
+    flag_clamp: bool = fieldex('B')
 
     # Number of indirect TEV stages
     indirect_target_stages: int = fieldex('B')
