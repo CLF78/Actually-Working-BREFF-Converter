@@ -7,10 +7,12 @@ from dataclasses import dataclass, Field
 
 from common.common import BaseBinary, fieldex
 from emitter.emitter import EmitterData
+from particle.particle import ParticleData
 
 @dataclass
 class EffectData(BaseBinary):
     emitter: EmitterData = fieldex()
+    particle: ParticleData = fieldex()
 
 
 @dataclass

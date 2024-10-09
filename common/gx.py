@@ -206,6 +206,12 @@ class GXLogicOp(CEnum):
 	InverseOr = auto()
 
 
+class GXTexWrapMode(CEnum):
+	Clamp = auto()
+	Repeat = auto()
+	Mirror = auto()
+
+
 @dataclass
 class GXColor(BaseBinary):
 	r: int = fieldex('B')
