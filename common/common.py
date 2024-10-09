@@ -375,7 +375,8 @@ class BaseBinary:
 
     def size(self, start_field: str = None, end_field: str = None) -> int:
         """
-        Get the size of the structure in bytes
+        Get the size of the data between start_field and end_field (inclusive).
+        Pass None to compute the size of the entire structure.
         """
 
         # Initialize loop

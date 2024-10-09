@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # nw4r.py
-# nw4r definitions
+# Common nw4r definitions
 
 from dataclasses import dataclass
 from common.common import BaseBinary, fieldex

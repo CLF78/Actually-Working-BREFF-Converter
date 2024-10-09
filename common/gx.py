@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # gx.py
-# GX definitions
+# Common GX definitions
 
 from enum import auto
 from dataclasses import dataclass
