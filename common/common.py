@@ -41,7 +41,8 @@ def camel_to_snake(camel_str: str) -> str:
 
 # Generates an extended field with the given settings
 def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: bool = False,
-            unroll_content: bool = False, align_pad: int = 1, export_name: str = None, **kwargs) -> Field:
+            unroll_content: bool = False, align_pad: int = 1, export_name: str = None,
+            default=MISSING, default_factory=MISSING, **kwargs) -> Field:
 
     # Replace any given metadata
     kwargs['metadata'] = {
@@ -53,11 +54,17 @@ def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: boo
         EXPORT_NAME: export_name
     }
 
-    # Replace kw_only argument
+    # Replace kw_only and init arguments
     kwargs['kw_only'] = True
-
-    # Replace init argument if necessary
     kwargs['init'] = False
+
+    # Use default or default factory if provided
+    if default is not MISSING:
+        kwargs['default'] = default
+    elif default_factory is not MISSING:
+        kwargs['default_factory'] = default_factory
+
+    # Return the created field
     return field(**kwargs)
 
 
@@ -71,7 +78,39 @@ class CEnum(Enum):
 # Base class for all structures to allow recursive data packing/unpacking
 @dataclass
 class BaseBinary:
-    parent: Optional[T] = fieldex(ignore_binary=True, ignore_json=True)
+    parent: Optional[T] = fieldex(ignore_binary=True, ignore_json=True, default=None)
+
+    def __post_init__(self):
+        """
+        Automatically initializes all fields that have not been yet set
+        """
+        for field in fields(self):
+
+            # Skip fields with defaults
+            if field.default is not MISSING or field.default_factory is not MISSING:
+                continue
+
+            field_type = field.type
+            field_name = field.name
+
+            if field_type is int:
+                setattr(self, field_name, 0)
+            elif field_type is bool:
+                setattr(self, field_name, False)
+            elif field_type is float:
+                setattr(self, field_name, 0.0)
+            elif field_type is bytes:
+                setattr(self, field_name, b'')
+            elif field_type is str:
+                setattr(self, field_name, '')
+            elif get_origin(field_type) == list:
+                setattr(self, field_name, [])
+            elif isinstance(field_type, type) and issubclass(field_type, Enum):
+                setattr(self, field_name, 0)
+            elif isinstance(field_type, type) and issubclass(field_type, BaseBinary):
+                setattr(self, field_name, field_type())
+            else:
+                raise ValueError(f'Missing default value for field {field.name} (type {field_type})')
 
     @classmethod
     def from_bytes(cls: Type[T], data: bytes, offset: int = 0, parent: Optional[T] = None) -> T:

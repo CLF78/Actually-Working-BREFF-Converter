@@ -104,7 +104,7 @@ class TEVStages(BaseBinary):
     kalpha4: GXTevKAlphaSel = fieldex('B', ignore_json=True)
 
     # Parsed TEV stages
-    tev_stages: list[TEVStage] = fieldex(ignore_binary=True, default_factory=list)
+    tev_stages: list[TEVStage] = fieldex(ignore_binary=True)
 
     def to_json(self) -> dict:
 

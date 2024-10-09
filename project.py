@@ -12,7 +12,7 @@ from effect import Effect
 class EffectTable(BaseBinary):
     table_size: int = fieldex('I', ignore_json=True)
     entry_count: int = fieldex('H2x', ignore_json=True)
-    entries: list[Effect] = fieldex(default_factory=list)
+    entries: list[Effect] = fieldex()
     offset: int = fieldex(ignore_binary=True, ignore_json=True)
 
     @classmethod

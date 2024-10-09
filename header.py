@@ -44,7 +44,7 @@ class BinaryFileHeader(BaseBinary):
     file_length: int = fieldex('I', ignore_json=True)
     header_length: int = fieldex('H', ignore_json=True)
     block_count: int = fieldex('H', ignore_json=True)
-    blocks: list[BinaryBlockHeader] = fieldex(export_name='projects', default_factory=list)
+    blocks: list[BinaryBlockHeader] = fieldex(export_name='projects')
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'BinaryFileHeader':

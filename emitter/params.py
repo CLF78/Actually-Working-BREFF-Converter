@@ -40,7 +40,7 @@ class Params(BaseBinary):
 
 @dataclass
 class PointParams(BaseBinary):
-    nothing: int = fieldex('23xB', ignore_json=True, default=0)
+    nothing: int = fieldex('23xB', ignore_json=True)
 
 
 @dataclass
