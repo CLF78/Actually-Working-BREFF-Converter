@@ -31,7 +31,7 @@ class EmitterData(BaseBinary):
     data_size: int = fieldex('4xI', ignore_json=True)
 
     # Various flags
-    common_flag: CommonFlag = fieldex('I')
+    common_flags: CommonFlag = fieldex('I')
 
     # Emitter shape and other flags
     emitter_flags: EmitterFlags = fieldex(unroll_content=True)

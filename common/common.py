@@ -25,7 +25,7 @@ def align(value: int, alignment: int) -> int:
 def pad(data: bytes, alignment: int):
     length = len(data)
     aligned_size = align(length, alignment)
-    return data + b'\0' * (length - aligned_size)
+    return data + b'\0' * (aligned_size - length)
 
 
 # Convert snake_case to camelCase

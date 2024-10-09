@@ -211,4 +211,4 @@ class GXColor(BaseBinary):
 	r: int = fieldex('B')
 	g: int = fieldex('B')
 	b: int = fieldex('B')
-	a: int = fieldex('B')
+	a: int = fieldex('B', default=0xFF)

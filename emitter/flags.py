@@ -6,7 +6,7 @@
 from enum import Enum, Flag
 from dataclasses import dataclass
 
-from common.common import BaseBinary, fieldex
+from common.common import BaseBinary, fieldex, snake_to_camel
 
 class CommonFlag(Flag):
     SyncChildrenLifetime       = 1 << 0  # Child elements are also deleted when the emitter is deleted
@@ -48,14 +48,6 @@ class TypeSpecificFlag(Flag):
     LinkedSize  = 1 << 1 # Links size of Y and Z to X (Cube, Sphere) or Z to X (Disc, Cylinder, Torus)
     LineCenter  = 1 << 2 # Line only, not sure of the purpose
 
-    @staticmethod
-    def get_allowed_flags(shape: EmitterShape):
-        if shape == EmitterShape.Line:
-            return TypeSpecificFlag.LineCenter
-        elif shape != EmitterShape.Point:
-            return TypeSpecificFlag.FlatDensity | TypeSpecificFlag.LinkedSize
-        return TypeSpecificFlag(0)
-
 
 class DrawFlag(Flag):
     ZCompareEnabled             = 1 << 0  # Z-compare is enabled
@@ -75,9 +67,36 @@ class DrawFlag(Flag):
     XYLinkScale                 = 1 << 14 # X is to be used in place of Y which is the scale of the particle
 
 
-# TODO fix type specific flags
 @dataclass
 class EmitterFlags(BaseBinary):
-    type_specific_flag: TypeSpecificFlag = fieldex('B')
-    emit_flag: EmitFlag = fieldex('H')
+    type_specific_flags: TypeSpecificFlag = fieldex('B')
+    emit_flags: EmitFlag = fieldex('H')
     shape: EmitterShape = fieldex('B')
+
+    def get_allowed_flags(self) -> TypeSpecificFlag:
+        if self.shape == EmitterShape.Line:
+            return TypeSpecificFlag.LineCenter
+        elif self.shape != EmitterShape.Point:
+            return TypeSpecificFlag.FlatDensity | TypeSpecificFlag.LinkedSize
+        return TypeSpecificFlag(0)
+
+    def to_json(self) -> dict:
+        data = super().to_json()
+
+        # Remove all flags that are not allowed
+        for flag in TypeSpecificFlag:
+            if flag not in self.get_allowed_flags():
+                data[snake_to_camel('type_specific_flags')].pop(flag.name)
+
+        # Return data
+        return data
+
+    def to_bytes(self) -> bytes:
+
+        # Remove all flags that are not allowed
+        for flag in TypeSpecificFlag:
+            if flag not in self.get_allowed_flags():
+                self.type_specific_flags &= ~flag
+
+        # Return data
+        return super().to_bytes()

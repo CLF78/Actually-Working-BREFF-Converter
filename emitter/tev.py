@@ -139,14 +139,4 @@ class TEVStages(BaseBinary):
             setattr(self, f'kcolor{i}', data.constant_color_selection)
             setattr(self, f'kalpha{i}', data.constant_alpha_selection)
 
-        # Set filler values for missing stages
-        for i in range(len(self.tev_stages) + 1, 5):
-            setattr(self, f'texture{i}', 0)
-            setattr(self, f'colors{i}', TEVStageColor(self, 0, 0, 0, 0))
-            setattr(self, f'colorop{i}', TEVStageColorOp(self, 0, 0, 0, False, 0))
-            setattr(self, f'alphas{i}', TEVStageAlpha(self, 0, 0, 0, 0))
-            setattr(self, f'alphaop{i}', TEVStageAlphaOp(self, 0, 0, 0, False, 0))
-            setattr(self, f'kcolor{i}', 0)
-            setattr(self, f'kalpha{i}', 0)
-
         return super().to_bytes()
