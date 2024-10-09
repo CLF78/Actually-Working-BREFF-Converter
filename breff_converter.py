@@ -6,7 +6,7 @@
 import argparse
 import json5
 from pathlib import Path
-from header import BinaryFileHeader
+from effect.header import BinaryFileHeader
 
 
 def decode(src: Path, dst: Path) -> None:

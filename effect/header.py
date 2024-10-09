@@ -5,7 +5,7 @@
 
 from dataclasses import dataclass, Field
 from common.common import BaseBinary, fieldex
-from project import EffectProject
+from effect.project import EffectProject
 
 @dataclass
 class BinaryBlockHeader(BaseBinary):

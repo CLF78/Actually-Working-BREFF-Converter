@@ -6,7 +6,7 @@
 from dataclasses import dataclass, Field
 
 from common.common import BaseBinary, fieldex, align
-from effect import Effect
+from effect.effect import Effect
 
 @dataclass
 class EffectTable(BaseBinary):
