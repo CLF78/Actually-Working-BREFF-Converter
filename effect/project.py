@@ -5,14 +5,14 @@
 
 from dataclasses import dataclass, Field
 
-from common.common import BaseBinary, fieldex, align
+from common.common import BaseBinary, fieldex
 from effect.effect import Effect
 
 @dataclass
 class EffectTable(BaseBinary):
     table_size: int = fieldex('I', ignore_json=True)
     entry_count: int = fieldex('H2x', ignore_json=True)
-    entries: list[Effect] = fieldex()
+    entries: list[Effect] = fieldex(ignore_binary=True)
     offset: int = fieldex(ignore_binary=True, ignore_json=True)
 
     @classmethod
