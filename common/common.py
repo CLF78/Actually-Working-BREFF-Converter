@@ -10,7 +10,7 @@ from enum import Flag, Enum
 
 T = TypeVar('T', bound='BaseBinary')
 ALIGN_PAD = 'align_pad'
-EXPORT_NAME = 'export_name'
+COUNT_FIELD = 'count_field'
 IGNORE_JSON = 'ignore_json'
 IGNORE_BINARY = 'ignore_binary'
 STRUCT = 'struct'
@@ -41,7 +41,7 @@ def camel_to_snake(camel_str: str) -> str:
 
 # Generates an extended field with the given settings
 def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: bool = False,
-            unroll_content: bool = False, align_pad: int = 1, export_name: str = None,
+            unroll_content: bool = False, align_pad: int = 1, count_field: str = None,
             default=MISSING, default_factory=MISSING, **kwargs) -> Field:
 
     # Replace any given metadata
@@ -51,7 +51,7 @@ def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: boo
         IGNORE_JSON: ignore_json,
         UNROLL_CONTENT: unroll_content,
         ALIGN_PAD: max(1, align_pad),
-        EXPORT_NAME: export_name
+        COUNT_FIELD: count_field
     }
 
     # Replace kw_only and init arguments
@@ -134,10 +134,43 @@ class BaseBinary:
             if field_meta[IGNORE_BINARY]:
                 continue
 
-            # Get the struct format, if it has one unpack it and set the field
-            # Also works for enums
+            # Get the struct format
             struct_format: struct.Struct = field_meta[STRUCT]
-            if struct_format:
+
+            # If it's a list, get the count field and unpack each entry
+            if get_origin(field_type) == list:
+                if not field_meta[COUNT_FIELD]:
+                    raise ValueError('Missing count field for list field', field_name)
+
+                # Get the list type and list
+                list_type = field_type.__args__[0]
+                container: list = getattr(obj, field_name)
+
+                # Get the counter value
+                count = obj
+                for attr in field_meta[COUNT_FIELD].split('.'):
+                    count = getattr(count, attr)
+
+                # If the field is a dataclass, iteratively deserialize it
+                if isinstance(list_type, type) and issubclass(list_type, BaseBinary):
+                    for _ in range(count):
+                        entry = list_type.from_bytes(data, offset, obj)
+                        container.append(entry)
+                        offset += entry.size()
+
+                # Else if a struct is provided, use it for unpacking
+                elif struct_format:
+                    for _ in range(count):
+                        container.append(struct_format.unpack_from(data, offset)[0])
+                        offset += struct_format.size
+
+                # Else bail
+                else:
+                    raise ValueError('Missing structure definition for list field', field_name)
+
+            # If a struct is provided, use it to unpack and set the field
+            # Also works for enums
+            elif struct_format:
                 field_size = struct_format.size
                 field_value = field_type(struct_format.unpack_from(data, offset)[0])
                 setattr(obj, field_name, field_value)
@@ -185,8 +218,30 @@ class BaseBinary:
             if field_meta[IGNORE_BINARY]:
                 continue
 
-            # If it has a format, use it for packing
+            # Get struct format
             struct_format: struct.Struct = field_meta[STRUCT]
+
+            # If it a list, pack it iteratively
+            if isinstance(field_value == list):
+
+                # Get the list's contained type
+                list_type = field.type.__args__[0]
+
+                # If the contained data is a dataclass, iteratively deserialize it
+                if isinstance(list_type, type) and issubclass(list_type, BaseBinary):
+                    for item in field_value:
+                        result += item.to_bytes()
+
+                # Else if a struct is provided, use it for unpacking
+                elif struct_format:
+                    for item in field_value:
+                        result += struct_format.pack(item)
+
+                # Else bail
+                else:
+                    raise ValueError('Missing structure definition for list field', field_name)
+
+            # Else use the struct for packing if available
             if struct_format:
                 result += struct_format.pack(field_value)
 
@@ -226,11 +281,8 @@ class BaseBinary:
             if field_meta[IGNORE_JSON]:
                 continue
 
-            # If the field is to be read with a different name, do so
-            if field_meta[EXPORT_NAME]:
-                field_json_name = field_meta[EXPORT_NAME]
-            else:
-                field_json_name = snake_to_camel(field_name)
+            # Convert the field name
+            field_json_name = snake_to_camel(field_name)
 
             # Check if the data is there
             if field_json_name in data or field_meta[UNROLL_CONTENT]:
@@ -328,11 +380,8 @@ class BaseBinary:
             if field_meta[IGNORE_JSON]:
                 continue
 
-            # If the field is to be read with a different name, do so
-            if field_meta[EXPORT_NAME]:
-                field_json_name = field_meta[EXPORT_NAME]
-            else:
-                field_json_name = snake_to_camel(field_name)
+            # Convert the field name
+            field_json_name = snake_to_camel(field_name)
 
             # Get the value
             field_value = getattr(self, field_name)
@@ -388,6 +437,7 @@ class BaseBinary:
             # Get field data
             field_name = field.name
             field_meta = field.metadata
+            field_value = getattr(self, field_name)
 
             # Skip fields until the starting one is found
             if not found_start_field:
@@ -400,22 +450,40 @@ class BaseBinary:
             if field_meta[IGNORE_BINARY]:
                 continue
 
-            # If the field has an associated structure, use it to calculate the size
+            # Get struct format
             struct_format: struct.Struct = field_meta[STRUCT]
-            if struct_format:
+
+            # If it a list, pack it iteratively
+            if isinstance(field_value, list):
+
+                # Get the list's contained type
+                list_type = field.type.__args__[0]
+
+                # If the contained data is a dataclass, iteratively deserialize it
+                if isinstance(list_type, type) and issubclass(list_type, BaseBinary):
+                    for item in field_value:
+                        size += item.size()
+
+                # Else if a struct is provided, use it for unpacking
+                elif struct_format:
+                    for item in field_value:
+                        size += struct_format.size
+
+                # Else bail
+                else:
+                    raise ValueError('Missing structure definition for list field', field_name)
+
+            # If a structure is given, use it
+            elif struct_format:
                 size += struct_format.size
 
-            # Else use the value for the calculation
-            else:
-                field_value = getattr(self, field_name)
+            # For dataclasses, use the size method recursively
+            elif isinstance(field_value, BaseBinary):
+                size += field_value.size()
 
-                # For dataclasses, use the size method recursively
-                if isinstance(field_value, BaseBinary):
-                    size += field_value.size()
-
-                # For strings, calculate the length
-                elif isinstance(field_value, str):
-                    size += len(field_value) + 1
+            # For strings, calculate the length
+            elif isinstance(field_value, str):
+                size += len(field_value) + 1
 
             # Align size
             size = align(size, field_meta[ALIGN_PAD])

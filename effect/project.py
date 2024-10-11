@@ -12,7 +12,7 @@ from effect.effect import Effect
 class EffectTable(BaseBinary):
     table_size: int = fieldex('I', ignore_json=True)
     entry_count: int = fieldex('H2x', ignore_json=True)
-    entries: list[Effect] = fieldex(ignore_binary=True)
+    entries: list[Effect] = fieldex(ignore_binary=True) # Handled manually
     offset: int = fieldex(ignore_binary=True, ignore_json=True)
 
     @classmethod
@@ -37,7 +37,7 @@ class EffectTable(BaseBinary):
         # Set the table size and entry count
         self.entry_count = len(self.entries)
         for entry in self.entries:
-            self.table_size += entry.size()
+            self.table_size += entry.size(None, 'data_size')
 
         # Pack the effect table header
         data = super().to_bytes()
@@ -69,21 +69,21 @@ class EffectTable(BaseBinary):
 @dataclass
 class EffectProject(BaseBinary):
     project_header_size: int = fieldex('I8x', ignore_json=True)
-    project_name_length: int = fieldex('H2x', ignore_json=True)
-    project_name: str = fieldex(export_name='name', align_pad=4)
+    name_length: int = fieldex('H2x', ignore_json=True)
+    name: str = fieldex(align_pad=4)
     effect_table: EffectTable = fieldex(unroll_content=True)
 
     def to_bytes(self) -> bytes:
 
         # Set project header size and name length, then pack everything
-        self.project_header_size = self.size(None, 'project_name')
-        self.project_name_length = len(self.project_name) + 1
+        self.project_header_size = self.size(None, 'name')
+        self.name_length = len(self.name) + 1
         return super().to_bytes()
 
     def validate(self, max_length: int, field: Field) -> None:
         match field.name:
-            case 'project_name':
-                if self.project_header_size != self.size(None, 'project_name'):
+            case 'name':
+                if self.project_header_size != self.size(None, 'name'):
                     raise ValueError('Invalid project header size')
-                if self.project_name_length != len(self.project_name) + 1:
+                if self.name_length != len(self.name) + 1:
                     raise ValueError('Project name length mismatch')

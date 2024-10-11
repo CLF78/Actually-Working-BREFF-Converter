@@ -23,7 +23,7 @@ class Effect(BaseBinary):
     name: str = fieldex()
     data_offset: int = fieldex('I', ignore_json=True)
     data_size: int = fieldex('I', ignore_json=True)
-    data: EffectData = fieldex(ignore_binary=True, unroll_content=True)
+    data: EffectData = fieldex(ignore_binary=True, unroll_content=True) # Handled manually
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'Effect':

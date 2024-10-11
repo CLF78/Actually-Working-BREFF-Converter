@@ -5,8 +5,16 @@
 
 from enum import Enum, Flag
 
-class AnimTarget(Enum):
-    # Particle U8 values
+class AnimProcessFlag(Flag):
+    SyncRand      = 1 << 2
+    Stop          = 1 << 3
+    EmitterTiming = 1 << 4
+    InfiniteLoop  = 1 << 5
+    Turn          = 1 << 6
+    Fitting       = 1 << 7
+
+
+class AnimTargetU8(Enum):
     Color1Primary = 0
     Alpha1Primary = 3
     Color1Secondary = 4
@@ -18,9 +26,11 @@ class AnimTarget(Enum):
     AlphaCompareRef0 = 119
     AlphaCompareRef1 = 120
 
-    # Particle F32 values
+
+class AnimTargetF32(Enum):
     ParticleSize = 16
     ParticleScale = 24
+    ParticleRotation = 32
     Texture1Scale = 44
     Texture1Rotation = 68
     Texture1Translation = 80
@@ -31,18 +41,22 @@ class AnimTarget(Enum):
     TextureIndRotation = 76
     TextureIndTranslation = 96
 
-    # Rotate values (uses curve type F32 if baked)
+
+class AnimTargetRotate(Enum):
     ParticleRotation = 32
 
-    # Texture values
+
+class AnimTargetTexture(Enum):
     Texture1 = 104
     Texture2 = 108
     TextureInd = 112
 
-    # Child values
+
+class AnimTargetChild(Enum):
     Child = 0
 
-    # Field values
+
+class AnimTargetField(Enum):
     FieldGravity = 0
     FieldSpeed = 1
     FieldMagnet = 2
@@ -52,13 +66,15 @@ class AnimTarget(Enum):
     FieldRandom = 7
     FieldTail = 8
 
-    # PostField value
+
+class AnimTargetPostField(Enum):
     PostFieldSize = 0
     PostFieldRotation = 12
     PostFieldTranslation = 24
 
-    # Emitter values
-    # TODO figure out what emitter field each of these affects for more accurate names
+
+# TODO figure out what emitter field each of these affects for more accurate names
+class AnimTargetEmitterF32(Enum):
     EmitterParam = 44
     EmitterScale = 124
     EmitterRotation = 136
@@ -81,50 +97,69 @@ class AnimType(Enum):
     Field = 7
     EmitterF32 = 11
 
-    @staticmethod
-    def get_from_target(target: AnimTarget, baked: bool) -> 'AnimType':
-        match target:
 
-            case AnimTarget.Color1Primary | AnimTarget.Alpha1Primary | AnimTarget.Color1Secondary | \
-                 AnimTarget.Alpha1Secondary | AnimTarget.Color2Primary | AnimTarget.Alpha2Primary | \
-                 AnimTarget.Color2Secondary | AnimTarget.Alpha2Secondary | AnimTarget.AlphaCompareRef0 | \
-                 AnimTarget.AlphaCompareRef1:
-                return AnimType.ParticleU8
+TargetTypeMap = {
+    AnimType.ParticleU8: {
+        AnimTargetU8.Color1Primary, AnimTargetU8.Alpha1Primary, AnimTargetU8.Color1Secondary,
+        AnimTargetU8.Alpha1Secondary, AnimTargetU8.Color2Primary, AnimTargetU8.Alpha2Primary,
+        AnimTargetU8.Color2Secondary, AnimTargetU8.Alpha2Secondary, AnimTargetU8.AlphaCompareRef0,
+        AnimTargetU8.AlphaCompareRef1
+    },
 
-            case AnimTarget.ParticleSize | AnimTarget.ParticleScale | AnimTarget.Texture1Scale | \
-                 AnimTarget.Texture1Rotation | AnimTarget.Texture1Translation | AnimTarget.Texture2Scale | \
-                 AnimTarget.Texture2Rotation | AnimTarget.Texture2Translation | AnimTarget.TextureIndScale | \
-                 AnimTarget.TextureIndRotation | AnimTarget.TextureIndTranslation:
-                return AnimType.ParticleF32
+    AnimType.ParticleF32: {
+        AnimTargetF32.ParticleSize, AnimTargetF32.ParticleScale, AnimTargetF32.Texture1Scale,
+        AnimTargetF32.Texture1Rotation, AnimTargetF32.Texture1Translation, AnimTargetF32.Texture2Scale,
+        AnimTargetF32.Texture2Rotation, AnimTargetF32.Texture2Translation, AnimTargetF32.TextureIndScale,
+        AnimTargetF32.TextureIndRotation, AnimTargetF32.TextureIndTranslation, AnimTargetF32.ParticleRotation
+    },
 
-            case AnimTarget.ParticleRotation:
-                return AnimType.ParticleF32 if baked else AnimType.ParticleRotate
+    AnimType.ParticleRotate: {AnimTargetRotate.ParticleRotation},
 
-            case AnimTarget.Texture1 | AnimTarget.Texture2 | AnimTarget.TextureInd:
-                return AnimType.ParticleTexture
+    AnimType.ParticleTexture: {
+        AnimTargetTexture.Texture1, AnimTargetTexture.Texture2, AnimTargetTexture.TextureInd
+    },
 
-            case AnimTarget.Child:
-                return AnimType.Child
+    AnimType.Child: {AnimTargetChild.Child},
 
-            case AnimTarget.FieldGravity | AnimTarget.FieldSpeed | AnimTarget.FieldMagnet | \
-                 AnimTarget.FieldNewton | AnimTarget.FieldVortex | AnimTarget.FieldSpin | \
-                 AnimTarget.FieldRandom | AnimTarget.FieldTail:
-                return AnimType.Field
+    AnimType.Field: {
+        AnimTargetField.FieldGravity, AnimTargetField.FieldSpeed, AnimTargetField.FieldMagnet,
+        AnimTargetField.FieldNewton, AnimTargetField.FieldVortex, AnimTargetField.FieldSpin,
+        AnimTargetField.FieldRandom, AnimTargetField.FieldTail
+    },
 
-            case AnimTarget.PostFieldSize | AnimTarget.PostFieldRotation | AnimTarget.PostFieldTranslation:
-                return AnimType.PostField
+    AnimType.PostField: {
+        AnimTargetPostField.PostFieldSize, AnimTargetPostField.PostFieldRotation,
+        AnimTargetPostField.PostFieldTranslation
+    },
 
-            case AnimTarget.EmitterParam | AnimTarget.EmitterScale | AnimTarget.EmitterRotation | \
-                 AnimTarget.EmitterTranslation | AnimTarget.EmitterSpeedOrig | AnimTarget.EmitterSpeedYAxis | \
-                 AnimTarget.EmitterSpeedRandom | AnimTarget.EmitterSpeedNormal | AnimTarget.EmitterSpeedSpecDir | \
-                 AnimTarget.EmitterEmission:
-                return AnimType.EmitterF32
+    AnimType.EmitterF32: {
+        AnimTargetEmitterF32.EmitterParam, AnimTargetEmitterF32.EmitterScale,
+        AnimTargetEmitterF32.EmitterRotation, AnimTargetEmitterF32.EmitterTranslation,
+        AnimTargetEmitterF32.EmitterSpeedOrig, AnimTargetEmitterF32.EmitterSpeedYAxis,
+        AnimTargetEmitterF32.EmitterSpeedRandom, AnimTargetEmitterF32.EmitterSpeedNormal,
+        AnimTargetEmitterF32.EmitterSpeedSpecDir, AnimTargetEmitterF32.EmitterEmission
+    }
+}
 
 
-class AnimProcessFlag(Flag):
-    SyncRand      = 1 << 2
-    Stop          = 1 << 3
-    EmitterTiming = 1 << 4
-    InfiniteLoop  = 1 << 5
-    Turn          = 1 << 6
-    Fitting       = 1 << 7
+def get_type_from_target(target: Enum, baked: bool) -> AnimType:
+    for anim_type, targets in TargetTypeMap.items():
+        if target in targets:
+            return AnimType.ParticleF32 if (anim_type == AnimType.ParticleRotate and baked) else anim_type
+    raise ValueError(f'Unknown target: {target}')
+
+
+def get_target_from_type(type: AnimType, kind_value: int) -> Enum:
+    for target in TargetTypeMap[type]:
+        if target.value == kind_value:
+            return target
+    raise ValueError(f'Unknown target {kind_value} for animation type {type}')
+
+
+# Stupid ass workaround for Python's inability to properly handle duplicate enum values
+def get_target_from_string(target: str):
+    for targets in TargetTypeMap.values():
+        for value in targets:
+            if value.name == target:
+                return value
+    raise ValueError(f'Unknown target: {target}')
