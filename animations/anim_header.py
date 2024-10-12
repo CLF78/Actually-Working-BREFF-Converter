@@ -41,7 +41,7 @@ class AnimationHeader(BaseBinary):
 
         # Decode the header
         ret = super().from_bytes(data, offset, parent)
-        offset += ret.size(None, 'info_table_size')
+        offset += ret.size('info_table_size')
 
         # Decode target because we need it for decoding the rest
         target = get_target_from_type(ret.curve_type, ret.kind_type)
@@ -97,8 +97,8 @@ class AnimationHeader(BaseBinary):
         self.is_baked = self.magic == 0xAB
         return super().to_json() | self.data.to_json()
 
-    def size(self, start_field: str = None, end_field: str = None) -> int:
-        size = super().size(start_field, end_field if end_field else 'info_table_size')
+    def size(self, end_field: str = None) -> int:
+        size = super().size(end_field if end_field else 'info_table_size')
 
         if end_field is None:
             size += self.key_table_size + self.range_table_size + self.random_table_size + \

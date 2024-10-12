@@ -48,11 +48,11 @@ class EffectTable(BaseBinary):
         table.offset = offset
 
         # Parse table entries after the table header
-        offset += table.size(None, 'entry_count')
+        offset += table.size('entry_count')
         for _ in range(table.entry_count):
             entry = EffectTableEntry.from_bytes(data, offset, table)
             table.entries.append(entry)
-            offset += entry.size(None, 'data_size')
+            offset += entry.size('data_size')
 
         # Return result
         return table
@@ -64,7 +64,7 @@ class EffectTable(BaseBinary):
         # Set the table size and entry count
         self.entry_count = len(self.entries)
         for entry in self.entries:
-            self.table_size += entry.size(None, 'data_size')
+            self.table_size += entry.size('data_size')
 
         # Pack the effect table header
         data = super().to_bytes()
@@ -104,14 +104,14 @@ class EffectProject(BaseBinary):
     def to_bytes(self) -> bytes:
 
         # Set project header size and name length, then pack everything
-        self.project_header_size = self.size(None, 'name')
+        self.project_header_size = self.size('name')
         self.project_name_length = len(self.project_name) + 1
         return super().to_bytes()
 
     def validate(self, max_length: int, field: Field) -> None:
         match field.name:
             case 'name':
-                if self.project_header_size != self.size(None, 'name'):
+                if self.project_header_size != self.size('name'):
                     raise ValueError('Invalid project header size')
                 if self.project_name_length != len(self.project_name) + 1:
                     raise ValueError('Project name length mismatch')

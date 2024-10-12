@@ -35,7 +35,7 @@ def decode(src: Path, dst: Path) -> None:
     # Iterate effects
     for entry in decoded.block.project.effect_table.entries:
         print('Parsing', entry.name, '...')
-        effect = Effect.from_bytes(entry.data, 0)
+        effect = Effect.from_bytes(entry.data)
         with open(Path(dst, f'{entry.name}.json5'), 'w', encoding='utf-8') as f:
             json5.dump(effect.to_json(), f, indent=4)
 
