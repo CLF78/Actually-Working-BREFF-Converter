@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from common.common import BaseBinary, fieldex
 from animations.anim_header import AnimationHeader
 from animations.anim_flags import *
-from animations.anim_tables import AnimationTable
+from animations.tables.anim_table import AnimationTable
 
 @dataclass
 class Animations(BaseBinary):
