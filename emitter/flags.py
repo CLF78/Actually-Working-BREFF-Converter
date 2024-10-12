@@ -36,6 +36,7 @@ class EmitterShape(Enum):
 
 class EmitFlag(Flag):
     LodEnabled    = 1 << 0  # Enables LOD
+    Unk4          = 1 << 2  # Does not seem to have any effect
     BillboardY    = 1 << 7  # Enables Billboard Y
     Billboard     = 1 << 8  # Enables Billboard
     FixedInterval = 1 << 9  # Disables emitter interval randomness
