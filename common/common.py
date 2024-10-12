@@ -74,7 +74,7 @@ def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: boo
 class CEnum(Enum):
     @classmethod
     def _generate_next_value_(cls, name, start, count, last_values):
-        return count if count not in last_values else count + 1
+        return last_values[-1] + 1 if last_values else 0
 
 
 # Base class for all structures to allow recursive data packing/unpacking
