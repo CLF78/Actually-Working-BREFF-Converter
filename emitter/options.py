@@ -161,9 +161,9 @@ class StripeOptions(BaseBinary):
     texmap_type: StripeTexmapType = fieldex(ignore_binary=True)
 
     def to_json(self) -> dict:
-        self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
-        self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask)
-        self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask)
+        self.connect = StripeConnect(self.type2 & StripeConnect.Mask.value)
+        self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask.value)
+        self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask.value)
         return super().to_json()
 
     def to_bytes(self) -> bytes:
@@ -185,9 +185,9 @@ class SmoothStripeOptions(BaseBinary):
     texmap_type: StripeTexmapType = fieldex(ignore_binary=True)
 
     def to_json(self) -> dict:
-        self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
-        self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask)
-        self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask)
+        self.connect = StripeConnect(self.type2 & StripeConnect.Mask.value)
+        self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask.value)
+        self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask.value)
         return super().to_json()
 
     def to_bytes(self) -> bytes:
