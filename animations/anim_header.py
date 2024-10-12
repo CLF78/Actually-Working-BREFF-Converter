@@ -5,7 +5,7 @@
 
 from dataclasses import dataclass
 from common.common import BaseBinary, fieldex
-from animations.anim_types import *
+from animations.anim_flags import *
 from animations.anim_child import AnimationChild
 
 @dataclass
@@ -16,17 +16,17 @@ class AnimationHeader(BaseBinary):
     magic: int = fieldex('B', ignore_json=True)
     kind_type: int = fieldex('B', ignore_json=True)
     curve_type: AnimType = fieldex('B', ignore_json=True)
+    kind_enable: int = fieldex('B', ignore_json=True)
 
     # Stupid ass workaround for Python's inability to properly handle duplicate enum values
     target: str = fieldex(ignore_binary=True)
 
-    kind_enable: int = fieldex('B') # TODO figure out what the fuck this even means
     process_flag: AnimProcessFlag = fieldex('B')
     loop_count: int = fieldex('B')
     random_seed: int = fieldex('H')
     frame_length: int = fieldex('H2x')
 
-    # TODO remove these from the JSON for known animation formats
+    # TODO remove these from the JSON
     key_table_size: int = fieldex('I')
     range_table_size: int = fieldex('I')
     random_table_size: int = fieldex('I')
@@ -62,11 +62,16 @@ class AnimationHeader(BaseBinary):
         return ret
 
     def to_bytes(self) -> bytes:
+
+        # Set values
         self.magic = 0xAB if self.is_baked else 0xAC
         target = get_target_from_string(self.target)
         self.kind_type = target.value
         self.curve_type = get_type_from_target(target, self.is_baked)
-        return super().to_bytes() + self.data.to_bytes()
+
+        # Ensure data is encoded first to adjust table sizes
+        data = self.data.to_bytes()
+        return super().to_bytes() + data
 
     @classmethod
     def from_json(cls, data: dict, parent = None) -> 'AnimationHeader':

@@ -6,12 +6,12 @@
 from enum import Enum, Flag
 
 class AnimProcessFlag(Flag):
-    SyncRand      = 1 << 2
-    Stop          = 1 << 3
-    EmitterTiming = 1 << 4
-    InfiniteLoop  = 1 << 5
-    Turn          = 1 << 6
-    Fitting       = 1 << 7
+    SyncRand        = 1 << 2
+    Stop            = 1 << 3 # Animation processes are stopped.
+    EmitterTiming   = 1 << 4 # The animation will run during emitter time.
+    LoopInfinitely  = 1 << 5 # The animation loops infinitely.
+    LoopByRepeating = 1 << 6 # The animation loops by repeating (if looping is enabled).
+    Fitting         = 1 << 7 # Expansion and contraction are performed according to the lifetime.
 
 
 class AnimTargetU8(Enum):
@@ -157,7 +157,7 @@ def get_target_from_type(type: AnimType, kind_value: int) -> Enum:
 
 
 # Stupid ass workaround for Python's inability to properly handle duplicate enum values
-def get_target_from_string(target: str):
+def get_target_from_string(target: str) -> Enum:
     for targets in TargetTypeMap.values():
         for value in targets:
             if value.name == target:

@@ -16,7 +16,6 @@ from emitter.options import ParticleType, Options
 from emitter.params import Params
 from emitter.tev import TEVStages
 
-
 @dataclass
 class EmitterData(BaseBinary):
 

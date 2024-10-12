@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
 
-# anim_table.py
-# Animation table definitions
+# anim.py
+# Animation definition
 
 from dataclasses import dataclass
 
 from common.common import BaseBinary, fieldex
-from animations.anim_base import AnimationHeader
-from animations.anim_types import *
-
-@dataclass
-class AnimationTable(BaseBinary):
-    anim_count: int = fieldex('H')
-    init_anim_count: int = fieldex('H')
-    anim_ptrs: list[int] = fieldex('I', ignore_json=True, count_field='anim_count')
-    anim_sizes: list[int] = fieldex('I', ignore_json=True, count_field='anim_count')
-
+from animations.anim_header import AnimationHeader
+from animations.anim_flags import *
+from animations.anim_tables import AnimationTable
 
 @dataclass
 class Animations(BaseBinary):

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from common.common import BaseBinary, fieldex
 from emitter.emitter import EmitterData
 from particle.particle import ParticleData
-from animations.anim_table import Animations
+from animations.anim import Animations
 
 @dataclass
 class Effect(BaseBinary):
