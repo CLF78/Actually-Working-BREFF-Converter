@@ -4,16 +4,41 @@
 # Effect project definitions
 
 from dataclasses import dataclass, Field
-
 from common.common import BaseBinary, fieldex
-from effect.effect import Effect
+
+@dataclass
+class EffectTableEntry(BaseBinary):
+    name_len: int = fieldex('H')
+    name: str = fieldex()
+    data_offset: int = fieldex('I')
+    data_size: int = fieldex('I')
+    data: bytes = fieldex(ignore_binary=True) # Handled manually
+
+    @classmethod
+    def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'EffectTableEntry':
+
+        # Get effect
+        effect = super().from_bytes(data, offset, parent)
+        offset = parent.offset + effect.data_offset
+        effect.data = data[offset:offset + effect.data_size]
+        return effect
+
+    def to_bytes(self) -> bytes:
+        self.name_len = len(self.name) + 1
+        self.data_size = len(self.data)
+        return super().to_bytes()
+
+    # TODO validation
+    def validate(self, max_length: int, field: Field) -> None:
+        return
+
 
 @dataclass
 class EffectTable(BaseBinary):
-    table_size: int = fieldex('I', ignore_json=True)
-    entry_count: int = fieldex('H2x', ignore_json=True)
-    entries: list[Effect] = fieldex(ignore_binary=True) # Handled manually
-    offset: int = fieldex(ignore_binary=True, ignore_json=True)
+    table_size: int = fieldex('I')
+    entry_count: int = fieldex('H2x')
+    entries: list[EffectTableEntry] = fieldex(ignore_binary=True) # Handled manually
+    offset: int = fieldex(ignore_binary=True)
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None) -> 'EffectTable':
@@ -25,13 +50,15 @@ class EffectTable(BaseBinary):
         # Parse table entries after the table header
         offset += table.size(None, 'entry_count')
         for _ in range(table.entry_count):
-            effect = Effect.from_bytes(data, offset, table)
-            table.entries.append(effect)
-            offset += effect.size(None, 'data_size')
+            entry = EffectTableEntry.from_bytes(data, offset, table)
+            table.entries.append(entry)
+            offset += entry.size(None, 'data_size')
 
         # Return result
         return table
 
+    # TODO rewrite this method
+    """
     def to_bytes(self) -> bytes:
 
         # Set the table size and entry count
@@ -54,6 +81,7 @@ class EffectTable(BaseBinary):
 
         # Combine the results
         return data + eff_data
+    """
 
     def validate(self, max_length: int, field: Field) -> None:
         match field.name:
@@ -69,15 +97,15 @@ class EffectTable(BaseBinary):
 @dataclass
 class EffectProject(BaseBinary):
     project_header_size: int = fieldex('I8x', ignore_json=True)
-    name_length: int = fieldex('H2x', ignore_json=True)
-    name: str = fieldex(align_pad=4)
-    effect_table: EffectTable = fieldex(unroll_content=True)
+    project_name_length: int = fieldex('H2x', ignore_json=True)
+    project_name: str = fieldex(align_pad=4)
+    effect_table: EffectTable = fieldex(ignore_json=True)
 
     def to_bytes(self) -> bytes:
 
         # Set project header size and name length, then pack everything
         self.project_header_size = self.size(None, 'name')
-        self.name_length = len(self.name) + 1
+        self.project_name_length = len(self.project_name) + 1
         return super().to_bytes()
 
     def validate(self, max_length: int, field: Field) -> None:
@@ -85,5 +113,5 @@ class EffectProject(BaseBinary):
             case 'name':
                 if self.project_header_size != self.size(None, 'name'):
                     raise ValueError('Invalid project header size')
-                if self.name_length != len(self.name) + 1:
+                if self.project_name_length != len(self.project_name) + 1:
                     raise ValueError('Project name length mismatch')

@@ -9,6 +9,8 @@ from typing import Optional, TypeVar, Type, get_origin
 from enum import Flag, Enum
 
 T = TypeVar('T', bound='BaseBinary')
+META_FILE = 'meta.json5'
+
 ALIGN_PAD = 'align_pad'
 COUNT_FIELD = 'count_field'
 IGNORE_JSON = 'ignore_json'
