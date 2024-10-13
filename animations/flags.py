@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# anim_types.py
-# Animation type definitions
+# flags.py
+# Animation flag definitions
 
 from enum import Enum, Flag
 

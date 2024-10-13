@@ -14,4 +14,4 @@ from animations.anim import Animations
 class Effect(BaseBinary):
     emitter: EmitterData = fieldex()
     particle: ParticleData = fieldex()
-    animations: Animations = fieldex(unroll_content=True)
+    animations: Animations = fieldex(unroll_content=True, align_pad=4)

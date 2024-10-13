@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# name_table.py
+# name.py
 # Animation name table definition
 
 from dataclasses import dataclass

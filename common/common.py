@@ -123,7 +123,7 @@ class BaseBinary:
         """
 
         # Get the field if a string is passed
-        if field is str:
+        if type(field) == str:
             field = self.__dataclass_fields__[field]
 
         # Get the field data
@@ -199,7 +199,7 @@ class BaseBinary:
         """
 
         # Get the field if a string is passed
-        if field is str:
+        if type(field) == str:
             field = self.__dataclass_fields__[field]
 
         # Get field data
@@ -256,7 +256,7 @@ class BaseBinary:
         """
 
         # Get the field if a string is passed
-        if field is str:
+        if type(field) == str:
             field = self.__dataclass_fields__[field]
 
         # Get the field information
@@ -349,7 +349,7 @@ class BaseBinary:
         """
 
         # Get the field if a string is passed
-        if field is str:
+        if type(field) == str:
             field = self.__dataclass_fields__[field]
 
         # Get info
@@ -409,7 +409,7 @@ class BaseBinary:
         """
 
         # Get the field if a string is passed
-        if field is str:
+        if type(field) == str:
             field = self.__dataclass_fields__[field]
 
         # Get field data
