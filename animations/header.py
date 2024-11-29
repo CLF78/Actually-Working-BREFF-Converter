@@ -3,34 +3,63 @@
 # header.py
 # Animation header definition
 
-from dataclasses import dataclass
-from common.common import BaseBinary, fieldex
+from common.field import *
 from animations.flags import *
+from animations.types.u8 import AnimationU8
 
-@dataclass
-class AnimationHeader(BaseBinary):
-    is_init: bool = fieldex(ignore_binary=True)
-    is_baked: bool = fieldex(ignore_binary=True)
+def get_anim_data(header: Structure) -> Field:
 
-    magic: int = fieldex('B', ignore_json=True)
-    kind_type: int = fieldex('B', ignore_json=True)
-    curve_type: AnimType = fieldex('B', ignore_json=True)
-    kind_enable: int = fieldex('B', ignore_json=True)
+    # Get necessary data
+    header: AnimationHeader = header
+    header.is_baked = header.magic == 0xAB
+    header.target = get_target_from_type(header.curve_type, header.kind_type)
+
+    # Create the data
+    # TODO write method
+    match header.target:
+        case AnimTargetU8.Color1Primary.name | AnimTargetU8.Alpha1Primary.name | \
+             AnimTargetU8.Color1Secondary.name | AnimTargetU8.Alpha1Secondary.name | \
+             AnimTargetU8.Color2Primary.name | AnimTargetU8.Alpha2Primary.name | \
+             AnimTargetU8.Color2Secondary.name | AnimTargetU8.Alpha2Secondary.name | \
+             AnimTargetU8.AlphaCompareRef0.name | AnimTargetU8.AlphaCompareRef1.name:
+            return StructField(AnimationU8, True) if not header.is_baked else padding(1)
+
+        # Unknown data type (yet)
+        case _:
+            return padding(1)
+
+
+class AnimationHeader(Structure):
 
     # Stupid ass workaround for Python's inability to properly handle duplicate enum values
-    target: str = fieldex(ignore_binary=True)
+    target = string(skip_binary=True)
+    is_init = boolean(skip_binary=True)
+    is_baked = boolean(skip_binary=True)
 
-    process_flag: AnimProcessFlag = fieldex('B')
-    loop_count: int = fieldex('B')
-    random_seed: int = fieldex('H')
-    frame_length: int = fieldex('H2x')
+    magic = u8(skip_json=True)
+    kind_type = u8(skip_json=True)
+    curve_type = EnumField(AnimType, skip_json=True)
+    kind_enable = u8(skip_json=True)
+
+    process_flag = FlagEnumField(AnimProcessFlag)
+    loop_count = u8()
+    random_seed = u16()
+    frame_count = u16('H2x')
 
     # TODO remove these from the JSON
-    key_table_size: int = fieldex('I')
-    range_table_size: int = fieldex('I')
-    random_table_size: int = fieldex('I')
-    name_table_size: int = fieldex('I')
-    info_table_size: int = fieldex('I')
+    key_table_size = u32()
+    range_table_size = u32()
+    random_table_size = u32()
+    name_table_size = u32()
+    info_table_size = u32()
+
+    data = UnionField(get_anim_data)
+
+    # TODO remove this garbage
+    @classmethod
+    def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional['Structure'] = None) -> tuple['Structure', int]:
+        data, _ = super().from_bytes(data, offset, parent)
+        return data, offset + data.size()
 
     def to_bytes(self) -> bytes:
 
@@ -41,16 +70,14 @@ class AnimationHeader(BaseBinary):
         self.curve_type = get_type_from_target(target, self.is_baked)
         return super().to_bytes()
 
-    def to_json(self) -> dict:
-        self.is_baked = self.magic == 0xAB
-        self.target = get_target_from_type(self.curve_type, self.kind_type)
-        return super().to_json()
-
-    def size(self, end_field: str = None) -> int:
-        size = super().size(end_field if end_field else 'info_table_size')
+    def size(self, start_field: Optional[Field] = None, end_field: Optional[Field] = None) -> int:
+        size = super().size(start_field, end_field if end_field else AnimationHeader.info_table_size)
 
         if end_field is None:
             size += self.key_table_size + self.range_table_size + self.random_table_size + \
                     self.name_table_size + self.info_table_size
 
         return size
+
+    def get_param_count(self):
+        return bin(self.kind_enable).count('1')

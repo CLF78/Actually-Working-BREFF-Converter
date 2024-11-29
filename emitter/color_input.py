@@ -4,8 +4,8 @@
 # ColorInput structure
 
 from enum import auto
-from dataclasses import dataclass
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 
 class RasterColor(CEnum):
     Null = 0
@@ -22,13 +22,12 @@ class TevColor(CEnum):
     Color2Multiply = auto()
 
 
-@dataclass
-class ColorInput(BaseBinary):
-    ras_color: RasterColor = fieldex('B')
-    tev_color1: TevColor = fieldex('B')
-    tev_color2: TevColor = fieldex('B')
-    tev_color3: TevColor = fieldex('B')
-    tev_k_color1: TevColor = fieldex('B')
-    tev_k_color2: TevColor = fieldex('B')
-    tev_k_color3: TevColor = fieldex('B')
-    tev_k_color4: TevColor = fieldex('B')
+class ColorInput(Structure):
+    ras_color = EnumField(RasterColor)
+    tev_color1 = EnumField(TevColor)
+    tev_color2 = EnumField(TevColor)
+    tev_color3 = EnumField(TevColor)
+    tev_k_color1 = EnumField(TevColor)
+    tev_k_color2 = EnumField(TevColor)
+    tev_k_color3 = EnumField(TevColor)
+    tev_k_color4 = EnumField(TevColor)

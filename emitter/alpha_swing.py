@@ -4,8 +4,8 @@
 # Alpha swing structure
 
 from enum import auto
-from dataclasses import dataclass
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 
 class AlphaSwingType(CEnum):
     NoSwing = auto()
@@ -16,9 +16,8 @@ class AlphaSwingType(CEnum):
     Sine = auto()
 
 
-@dataclass
-class AlphaSwing(BaseBinary):
-    type: AlphaSwingType = fieldex('b')
-    cycle_period: int = fieldex('H')
-    randomness: int = fieldex('b')
-    amplitude: int = fieldex('b')
+class AlphaSwing(Structure):
+    type = EnumField(AlphaSwingType)
+    cycle_period = u16()
+    randomness = s8()
+    amplitude = s8()

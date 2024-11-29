@@ -149,10 +149,10 @@ def get_type_from_target(target: Enum, baked: bool) -> AnimType:
     raise ValueError(f'Unknown target: {target}')
 
 
-def get_target_from_type(type: AnimType, kind_value: int) -> Enum:
+def get_target_from_type(type: AnimType, kind_value: int) -> str:
     for target in TargetTypeMap[type]:
         if target.value == kind_value:
-            return target
+            return target.name
     raise ValueError(f'Unknown target {kind_value} for animation type {type}')
 
 

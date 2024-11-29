@@ -4,8 +4,8 @@
 # Animation key frame table definitions
 
 from enum import auto
-from dataclasses import dataclass
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 
 class KeyType(CEnum):
     Fixed = auto()  # Use data embedded in the key frame
@@ -19,13 +19,10 @@ class KeyCurveType(CEnum):
     Step = auto()
 
 
-@dataclass
-class KeyFrameBase(BaseBinary):
-    frame: int = fieldex('H')
-    value_type: KeyType = fieldex('Bx')
+class KeyFrameBase(Structure):
+    frame = u16()
+    value_type = EnumField(KeyType, 'Bx')
 
 
-@dataclass
-class KeyFrameTable(BaseBinary):
-    entry_count: int = fieldex('H2x')
-    entries: list[KeyFrameBase] = fieldex(ignore_binary=True)
+class KeyFrameTable(Structure):
+    entry_count = u16('H2x')

@@ -8,8 +8,7 @@ import json5
 from pathlib import Path
 
 from common.common import META_FILE
-from effect.header import BinaryFileHeader
-from effect.effect import Effect
+from effect.effect import BinaryFileHeader, EffectTable, Effect
 
 def decode(src: Path, dst: Path) -> None:
 
@@ -26,16 +25,18 @@ def decode(src: Path, dst: Path) -> None:
 
     # Open file and decode it
     src_data = src.read_bytes()
-    decoded = BinaryFileHeader.from_bytes(src_data)
+    header, _ = BinaryFileHeader.from_bytes(src_data)
 
     # Write the meta file
     with open(Path(dst, META_FILE), 'w', encoding='utf-8') as f:
-        json5.dump(decoded.to_json(), f, indent=4)
+        json5.dump(header.to_json(), f, indent=4)
 
-    # Iterate effects
-    for entry in decoded.block.project.effect_table.entries:
+    # Create the effect table from the project data, then iterate it
+    effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
+    for _, entry in effect_table.entries:
+
         print('Parsing', entry.name, '...')
-        effect = Effect.from_bytes(entry.data)
+        effect, _ = Effect.from_bytes(entry.data)
         with open(Path(dst, f'{entry.name}.json5'), 'w', encoding='utf-8') as f:
             json5.dump(effect.to_json(), f, indent=4)
 

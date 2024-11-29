@@ -3,167 +3,165 @@
 # emitter.py
 # Emitter entry definitions
 
-from dataclasses import dataclass
-
-from common.common import BaseBinary, fieldex
+from common.common import fieldex
+from common.field import *
 from common.gx import *
 from common.nw4r import VEC3, MTX23
 from emitter.alpha_swing import AlphaSwing
 from emitter.color_input import ColorInput
 from emitter.flags import CommonFlag, EmitterFlags, DrawFlag
 from emitter.lighting import Lighting
-from emitter.options import ParticleType, Options
-from emitter.params import Params
+from emitter.options import ParticleType, get_options
+from emitter.params import get_emitter_params
 from emitter.tev import TEVStages
 
-@dataclass
-class EmitterData(BaseBinary):
+class EmitterData(Structure):
 
     # Size of emitter
-    data_size: int = fieldex('4xI', ignore_json=True)
+    data_size = u32('4xI', skip_json=True)
 
     # Various flags
-    common_flags: CommonFlag = fieldex('I')
+    common_flags = FlagEnumField(CommonFlag, 'I')
 
     # Emitter shape and other flags
-    emitter_flags: EmitterFlags = fieldex(unroll_content=True)
+    emitter_flags = StructField(EmitterFlags, True)
 
     # Maximum emit time
-    emit_lifetime: int = fieldex('H')
+    emit_lifetime = u16()
 
     # Particle lifetime
-    particle_lifetime: int = fieldex('H')
+    particle_lifetime = u16()
 
     # Particle lifetime randomness
-    particle_lifetime_randomness: int = fieldex('b')
+    particle_lifetime_randomness = s8()
 
     # Ratio of the influence on the Following child particle's translation
-    inherit_child_particle_translate: int = fieldex('b')
+    inherit_child_particle_translate = s8()
 
     # Emission interval randomness
-    emission_interval_randomness: int = fieldex('b')
+    emission_interval_randomness = s8()
 
     # Emission volume randomness
-    emission_volume_randomness: int = fieldex('b')
+    emission_volume_randomness = s8()
 
     # Emission volume
-    emission_volume: float = fieldex('f')
+    emission_volume = f32()
 
     # Emit start time
-    emission_start_time: int = fieldex('H')
+    emission_start_time = u16()
 
     # Calculate Elapsed Frames value
-    emission_past: int = fieldex('H')
+    emission_past = u16()
 
     # Emission interval
-    emission_interval: int = fieldex('H')
+    emission_interval = u16()
 
     # Ratio of the effect on translation of an inherited particle
-    inherit_particle_translate: int = fieldex('b')
+    inherit_particle_translate = s8()
 
     # Ratio of the influence on the Following child emitter's translation
-    inherit_child_emit_translate: int = fieldex('b')
+    inherit_child_emit_translate = s8()
 
     # Various shape-specific parameters
-    shape_params: Params = fieldex()
+    shape_params = UnionField(get_emitter_params)
 
     # Number of divisions when the emitter shape is equally spaced
-    shape_divisions: int = fieldex('H')
+    shape_divisions = u16()
 
     # Initial velocity randomness
-    initial_velocity_randomness: int = fieldex('b')
+    initial_velocity_randomness = s8()
 
     # Initial momentum randomness
-    initial_momentum_randomness: int = fieldex('b')
+    initial_momentum_randomness = s8()
 
     # Speed in all directions
-    speed: float = fieldex('f')
+    speed = f32()
 
     # Y-axis diffusion speed
-    y_diffusion_speed: float = fieldex('f')
+    y_diffusion_speed = f32()
 
     # Random direction speed
-    random_dir_speed: float = fieldex('f')
+    random_dir_speed = f32()
 
     # Normal direction speed
-    normal_dir_speed: float = fieldex('f')
+    normal_dir_speed = f32()
 
     # Normal direction diffusion angle
-    normal_dir_diffusion_angle: float = fieldex('f')
+    normal_dir_diffusion_angle = f32()
 
     # Specified direction emission speed
-    specified_dir_emission_speed: float = fieldex('f')
+    specified_dir_emission_speed = f32()
 
     # Specified direction diffusion angle
-    specified_dir_diffusion_angle: float = fieldex('f')
+    specified_dir_diffusion_angle = f32()
 
     # Specified direction
-    specified_dir: VEC3 = fieldex()
+    specified_dir = StructField(VEC3)
 
     # Scale / Rotation / Translation
-    scale: VEC3 = fieldex()
-    rotation: VEC3 = fieldex()
-    translation: VEC3 = fieldex()
+    scale = StructField(VEC3)
+    rotation = StructField(VEC3)
+    translation = StructField(VEC3)
 
     # Near plane for LOD
-    near_lod_plane: int = fieldex('b')
+    near_lod_plane = s8()
 
     # Far plane for LOD
-    far_lod_plane: int = fieldex('b')
+    far_lod_plane = s8()
 
     # Minimum generation rate of LOD
-    min_lod_emit_rate: int = fieldex('b')
+    min_lod_emit_rate = s8()
 
     # LOD alpha
-    lod_alpha: int = fieldex('b')
+    lod_alpha = s8()
 
     # Random seed
-    random_seed: int = fieldex('I')
+    random_seed = u32()
 
     # User data
-    user_data: int = fieldex('Q')
+    user_data = u64()
 
     # Draw flag
-    draw_flags: DrawFlag = fieldex('H')
+    draw_flags = FlagEnumField(DrawFlag, 'H')
 
     # Alpha compare operations and operator
-    alpha_compare_1: GXCompare = fieldex('b')
-    alpha_compare_2: GXCompare = fieldex('b')
-    alpha_compare_operator: GXAlphaOp = fieldex('b')
+    alpha_compare_1 = EnumField(GXCompare)
+    alpha_compare_2 = EnumField(GXCompare)
+    alpha_compare_operator = EnumField(GXAlphaOp)
 
     # TEV stages
-    tev_stages: TEVStages = fieldex(unroll_content=True)
+    tev_stages = StructField(TEVStages, True)
 
     # Blend information
-    blend_type: GXBlendMode = fieldex('b')
-    blend_src_factor: GXBlendFactor = fieldex('b')
-    blend_dst_factor: GXBlendFactor = fieldex('b')
-    blend_operation: GXLogicOp = fieldex('b')
+    blend_type = EnumField(GXBlendMode)
+    blend_src_factor = EnumField(GXBlendFactor)
+    blend_dst_factor = EnumField(GXBlendFactor)
+    blend_operation = EnumField(GXLogicOp)
 
     # Color and alpha inputs
-    color_input: ColorInput = fieldex()
-    alpha_input: ColorInput = fieldex()
+    color_input = StructField(ColorInput)
+    alpha_input = StructField(ColorInput)
 
     # Z Compare Function
-    z_compare_func: GXCompare = fieldex('b')
+    z_compare_func = EnumField(GXCompare)
 
     # Alpha swing type
-    alpha_swing: AlphaSwing = fieldex()
+    alpha_swing = StructField(AlphaSwing)
 
     # Lighting
-    lighting: Lighting = fieldex()
+    lighting = StructField(Lighting)
 
     # Indirect texture matrix and scale
-    indirect_texture_matrix: MTX23 = fieldex()
-    indirect_texture_scale: int = fieldex('b')
+    indirect_texture_matrix = StructField(MTX23)
+    indirect_texture_scale = s8()
 
     # Pivots
-    pivot_x: int = fieldex('b')
-    pivot_y: int = fieldex('bx')
+    pivot_x = s8()
+    pivot_y = s8('bx')
 
     # Options
-    particle_type: ParticleType = fieldex('B')
-    particle_options: Options = fieldex()
+    particle_type = EnumField(ParticleType)
+    particle_options = UnionField(get_options)
 
     # Z Offset
-    z_offset: float = fieldex('f')
+    z_offset = f32()

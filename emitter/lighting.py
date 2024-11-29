@@ -4,8 +4,8 @@
 # Emitter lighting definitions
 
 from enum import auto
-from dataclasses import dataclass
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 from common.nw4r import VEC3
 from common.gx import GXColor
 
@@ -21,11 +21,10 @@ class LightingType(CEnum):
     Point = auto()
 
 
-@dataclass
-class Lighting(BaseBinary):
-    mode: LightingMode = fieldex('B')
-    type: LightingType = fieldex('B')
-    ambient_color: GXColor = fieldex()
-    diffuse_color: GXColor = fieldex()
-    radius: float = fieldex('f')
-    position: VEC3 = fieldex()
+class Lighting(Structure):
+    mode = EnumField(LightingMode)
+    type = EnumField(LightingType)
+    ambient_color = StructField(GXColor)
+    diffuse_color = StructField(GXColor)
+    radius = f32()
+    position = StructField(VEC3)

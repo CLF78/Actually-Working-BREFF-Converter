@@ -42,6 +42,7 @@ def camel_to_snake(camel_str: str) -> str:
 
 
 # Generates an extended field with the given settings
+# TODO remove
 def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: bool = False,
             unroll_content: bool = False, align_pad: int = 1, count_field: str = None,
             default=MISSING, default_factory=MISSING, **kwargs) -> Field:
@@ -78,6 +79,7 @@ class CEnum(Enum):
 
 
 # Base class for all structures to allow recursive data packing/unpacking
+# TODO remove
 @dataclass
 class BaseBinary:
     parent: Optional[T] = fieldex(ignore_binary=True, ignore_json=True, default=None)
@@ -510,7 +512,6 @@ class BaseBinary:
         obj.parent = parent
 
         # Parse each field
-        # TODO validation
         for field in fields(cls):
             if not field.metadata[IGNORE_JSON]:
                 obj.field_from_json(field, data)
@@ -558,7 +559,6 @@ class BaseBinary:
         # Return result
         return size
 
-    # TODO perform validation when converting from JSON to BREFF as well
     def validate(self, data_length: int, field: Field) -> None:
         """
         Validates the data for the given field.

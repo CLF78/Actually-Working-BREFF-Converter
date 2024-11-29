@@ -3,76 +3,49 @@
 # params.py
 # Emitter parameter definitions
 
-from dataclasses import dataclass
-
-from common.common import BaseBinary, fieldex
+from common.field import *
 from emitter.flags import EmitterShape
 
-class Params(BaseBinary):
-    @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None):
-        shape = parent.emitter_flags.shape
-        if shape == EmitterShape.Point:
-            return PointParams.from_bytes(data, offset, parent)
-        elif shape == EmitterShape.Disc:
-            return DiscParams.from_bytes(data, offset, parent)
-        elif shape == EmitterShape.Line:
-            return LineParams.from_bytes(data, offset, parent)
-        elif shape == EmitterShape.Cube:
-            return CubeParams.from_bytes(data, offset, parent)
-        else:
-            return CylindereSphereTorusParams.from_bytes(data, offset, parent)
-
-    @classmethod
-    def from_json(cls, data: dict, parent: BaseBinary = None):
-        shape = data['shape']
-        if shape == EmitterShape.Point:
-            return PointParams.from_json(data, parent)
-        elif shape == EmitterShape.Disc:
-            return DiscParams.from_json(data, parent)
-        elif shape == EmitterShape.Line:
-            return LineParams.from_json(data, parent)
-        elif shape == EmitterShape.Cube:
-            return CubeParams.from_json(data, parent)
-        else:
-            return CylindereSphereTorusParams.from_json(data, parent)
+class DiscParams(Structure):
+    x_size = f32()
+    inner_radius = f32()
+    angle_start = f32()
+    angle_end = f32()
+    z_size = f32('f4x')
 
 
-@dataclass
-class PointParams(BaseBinary):
-    nothing: int = fieldex('23xB', ignore_json=True)
+class LineParams(Structure):
+    length = f32()
+    x_rot = f32()
+    y_rot = f32()
+    z_rot = f32('f8x')
 
 
-@dataclass
-class DiscParams(BaseBinary):
-    x_size: float = fieldex('f')
-    inner_radius: float = fieldex('f')
-    angle_start: float = fieldex('f')
-    angle_end: float = fieldex('f')
-    z_size: float = fieldex('f4x')
+class CubeParams(Structure):
+    x_size = f32()
+    y_size = f32()
+    z_size = f32()
+    inner_radius = f32('f8x')
 
 
-@dataclass
-class LineParams(BaseBinary):
-    length: float = fieldex('f')
-    x_rot: float = fieldex('f')
-    y_rot: float = fieldex('f')
-    z_rot: float = fieldex('f8x')
+class CylindereSphereTorusParams(Structure):
+    x_size = f32()
+    inner_radius = f32()
+    angle_start = f32()
+    angle_end = f32()
+    y_size = f32()
+    z_size = f32()
 
 
-@dataclass
-class CubeParams(BaseBinary):
-    x_size: float = fieldex('f')
-    y_size: float = fieldex('f')
-    z_size: float = fieldex('f')
-    inner_radius: float =  fieldex('f8x')
-
-
-@dataclass
-class CylindereSphereTorusParams(BaseBinary):
-    x_size: float = fieldex('f')
-    inner_radius: float = fieldex('f')
-    angle_start: float = fieldex('f')
-    angle_end: float = fieldex('f')
-    y_size: float = fieldex('f')
-    z_size: float = fieldex('f')
+def get_emitter_params(emitter: Structure) -> Field:
+    shape = emitter.emitter_flags.shape
+    if shape == EmitterShape.Point:
+        return padding(24)
+    elif shape == EmitterShape.Disc:
+        return StructField(DiscParams)
+    elif shape == EmitterShape.Line:
+        return StructField(LineParams)
+    elif shape == EmitterShape.Cube:
+        return StructField(CubeParams)
+    else:
+        return StructField(CylindereSphereTorusParams)

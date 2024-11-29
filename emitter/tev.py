@@ -3,111 +3,104 @@
 # tev.py
 # TEV stage definitions
 
-from dataclasses import dataclass
-from common.common import BaseBinary, fieldex
+from common.field import *
 from common.gx import *
 
-@dataclass
-class TEVStageColor(BaseBinary):
-    color_selection_a: GXTevColorArg = fieldex('B')
-    color_selection_b: GXTevColorArg = fieldex('B')
-    color_selection_c: GXTevColorArg = fieldex('B')
-    color_selection_d: GXTevColorArg = fieldex('B')
+class TEVStageColor(Structure):
+    color_selection_a = EnumField(GXTevColorArg)
+    color_selection_b = EnumField(GXTevColorArg)
+    color_selection_c = EnumField(GXTevColorArg)
+    color_selection_d = EnumField(GXTevColorArg)
 
 
-@dataclass
-class TEVStageColorOp(BaseBinary):
-    color_operation: GXTevOp = fieldex('B')
-    color_bias: GXTevBias = fieldex('B')
-    color_scale: GXTevScale = fieldex('B')
-    color_clamp: bool = fieldex('B')
-    color_register: GXTevRegID = fieldex('B')
+class TEVStageColorOp(Structure):
+    color_operation = EnumField(GXTevOp)
+    color_bias = EnumField(GXTevBias)
+    color_scale = EnumField(GXTevScale)
+    color_clamp = boolean()
+    color_register = EnumField(GXTevRegID)
 
 
-@dataclass
-class TEVStageAlphaOp(BaseBinary):
-    alpha_operation: GXTevOpAlpha = fieldex('B')
-    alpha_bias: GXTevBias = fieldex('B')
-    alpha_scale: GXTevScale = fieldex('B')
-    alpha_clamp: bool = fieldex('B')
-    alpha_register: GXTevRegIDAlpha = fieldex('B')
+class TEVStageAlphaOp(Structure):
+    alpha_operation = EnumField(GXTevOpAlpha)
+    alpha_bias = EnumField(GXTevBias)
+    alpha_scale = EnumField(GXTevScale)
+    alpha_clamp = boolean()
+    alpha_register = EnumField(GXTevRegIDAlpha)
 
 
-@dataclass
-class TEVStageAlpha(BaseBinary):
-    alpha_selection_a: GXTevAlphaArg = fieldex('B')
-    alpha_selection_b: GXTevAlphaArg = fieldex('B')
-    alpha_selection_c: GXTevAlphaArg = fieldex('B')
-    alpha_selection_d: GXTevAlphaArg = fieldex('B')
+class TEVStageAlpha(Structure):
+    alpha_selection_a = EnumField(GXTevAlphaArg)
+    alpha_selection_b = EnumField(GXTevAlphaArg)
+    alpha_selection_c = EnumField(GXTevAlphaArg)
+    alpha_selection_d = EnumField(GXTevAlphaArg)
 
 
-@dataclass
-class TEVStage(BaseBinary):
-    texture: int = fieldex()
-    colors: TEVStageColor = fieldex(unroll_content=True)
-    colorop: TEVStageColorOp = fieldex(unroll_content=True)
-    alphas: TEVStageAlpha = fieldex(unroll_content=True)
-    alphaop: TEVStageAlphaOp = fieldex(unroll_content=True)
-    constant_color_selection: GXTevKColorSel = fieldex()
-    constant_alpha_selection: GXTevKAlphaSel = fieldex()
+class TEVStage(Structure):
+    texture = u32()
+    colors = StructField(TEVStageColor, True)
+    colorop = StructField(TEVStageColorOp, True)
+    alphas = StructField(TEVStageAlpha, True)
+    alphaop = StructField(TEVStageAlphaOp, True)
+    constant_color_selection = EnumField(GXTevKColorSel)
+    constant_alpha_selection = EnumField(GXTevKAlphaSel)
 
 
-@dataclass
-class TEVStages(BaseBinary):
+class TEVStages(Structure):
 
     # Number of TEV stages
-    num_tev_stages: int = fieldex('B', ignore_json=True)
+    num_tev_stages = u8(skip_json=True)
 
     # Obsolete flag
-    flag_clamp: bool = fieldex('B')
+    flag_clamp = boolean()
 
     # Number of indirect TEV stages
-    indirect_target_stages: int = fieldex('B')
+    indirect_target_stages = u8()
 
     # TEV Texture value (unsure of purpose)
-    texture1: int = fieldex('B', ignore_json=True)
-    texture2: int = fieldex('B', ignore_json=True)
-    texture3: int = fieldex('B', ignore_json=True)
-    texture4: int = fieldex('B', ignore_json=True)
+    texture1 = u8(skip_json=True)
+    texture2 = u8(skip_json=True)
+    texture3 = u8(skip_json=True)
+    texture4 = u8(skip_json=True)
 
     # TEV stage colors
-    colors1: TEVStageColor = fieldex(ignore_json=True)
-    colors2: TEVStageColor = fieldex(ignore_json=True)
-    colors3: TEVStageColor = fieldex(ignore_json=True)
-    colors4: TEVStageColor = fieldex(ignore_json=True)
+    colors1 = StructField(TEVStageColor, skip_json=True)
+    colors2 = StructField(TEVStageColor, skip_json=True)
+    colors3 = StructField(TEVStageColor, skip_json=True)
+    colors4 = StructField(TEVStageColor, skip_json=True)
 
     # TEV color operations
-    colorop1: TEVStageColorOp = fieldex(ignore_json=True)
-    colorop2: TEVStageColorOp = fieldex(ignore_json=True)
-    colorop3: TEVStageColorOp = fieldex(ignore_json=True)
-    colorop4: TEVStageColorOp = fieldex(ignore_json=True)
+    colorop1 = StructField(TEVStageColorOp, skip_json=True)
+    colorop2 = StructField(TEVStageColorOp, skip_json=True)
+    colorop3 = StructField(TEVStageColorOp, skip_json=True)
+    colorop4 = StructField(TEVStageColorOp, skip_json=True)
 
     # TEV stage alphas
-    alphas1: TEVStageAlpha = fieldex(ignore_json=True)
-    alphas2: TEVStageAlpha = fieldex(ignore_json=True)
-    alphas3: TEVStageAlpha = fieldex(ignore_json=True)
-    alphas4: TEVStageAlpha = fieldex(ignore_json=True)
+    alphas1 = StructField(TEVStageAlpha, skip_json=True)
+    alphas2 = StructField(TEVStageAlpha, skip_json=True)
+    alphas3 = StructField(TEVStageAlpha, skip_json=True)
+    alphas4 = StructField(TEVStageAlpha, skip_json=True)
 
     # TEV alpha operations
-    alphaop1: TEVStageAlphaOp = fieldex(ignore_json=True)
-    alphaop2: TEVStageAlphaOp = fieldex(ignore_json=True)
-    alphaop3: TEVStageAlphaOp = fieldex(ignore_json=True)
-    alphaop4: TEVStageAlphaOp = fieldex(ignore_json=True)
+    alphaop1 = StructField(TEVStageAlphaOp, skip_json=True)
+    alphaop2 = StructField(TEVStageAlphaOp, skip_json=True)
+    alphaop3 = StructField(TEVStageAlphaOp, skip_json=True)
+    alphaop4 = StructField(TEVStageAlphaOp, skip_json=True)
 
     # TEV constant colors
-    kcolor1: GXTevKColorSel = fieldex('B', ignore_json=True)
-    kcolor2: GXTevKColorSel = fieldex('B', ignore_json=True)
-    kcolor3: GXTevKColorSel = fieldex('B', ignore_json=True)
-    kcolor4: GXTevKColorSel = fieldex('B', ignore_json=True)
+    kcolor1 = EnumField(GXTevKColorSel, skip_json=True)
+    kcolor2 = EnumField(GXTevKColorSel, skip_json=True)
+    kcolor3 = EnumField(GXTevKColorSel, skip_json=True)
+    kcolor4 = EnumField(GXTevKColorSel, skip_json=True)
 
     # TEV constant alphas
-    kalpha1: GXTevKAlphaSel = fieldex('B', ignore_json=True)
-    kalpha2: GXTevKAlphaSel = fieldex('B', ignore_json=True)
-    kalpha3: GXTevKAlphaSel = fieldex('B', ignore_json=True)
-    kalpha4: GXTevKAlphaSel = fieldex('B', ignore_json=True)
+    kalpha1 = EnumField(GXTevKAlphaSel, skip_json=True)
+    kalpha2 = EnumField(GXTevKAlphaSel, skip_json=True)
+    kalpha3 = EnumField(GXTevKAlphaSel, skip_json=True)
+    kalpha4 = EnumField(GXTevKAlphaSel, skip_json=True)
 
     # Parsed TEV stages
-    tev_stages: list[TEVStage] = fieldex(ignore_binary=True)
+    tev_stages = ListField(StructField(TEVStage), skip_binary=True) # Handled manually
 
     def to_json(self) -> dict:
 
@@ -122,7 +115,7 @@ class TEVStages(BaseBinary):
             stage.alphaop = getattr(self, f'alphaop{i}')
             stage.constant_color_selection = getattr(self, f'kcolor{i}')
             stage.constant_alpha_selection = getattr(self, f'kalpha{i}')
-            self.tev_stages.append(stage)
+            self.tev_stages.append((type(stage), stage))
 
         # Return result
         return super().to_json()

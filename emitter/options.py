@@ -4,9 +4,9 @@
 # Emitter option definitions
 
 from enum import auto
-from dataclasses import dataclass
 
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 
 class ParticleType(CEnum):
     Point = auto()
@@ -94,71 +94,37 @@ class DirectionalPivot(CEnum):
     Billboard = auto() # Convert into a billboard, with the movement direction as its axis
 
 
-class Options(BaseBinary):
-    @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0, parent: BaseBinary = None):
-        particle_type = parent.particle_type
-        if particle_type == ParticleType.Billboard:
-            return BillboardOptions.from_bytes(data, offset, parent)
-        elif particle_type == ParticleType.Directional:
-            return DirectionalOptions.from_bytes(data, offset, parent)
-        elif particle_type == ParticleType.Stripe:
-            return StripeOptions.from_bytes(data, offset, parent)
-        elif particle_type == ParticleType.SmoothStripe:
-            return SmoothStripeOptions.from_bytes(data, offset, parent)
-        else:
-            return PointLineFreeOptions.from_bytes(data, offset, parent)
-
-    @classmethod
-    def from_json(cls, data: dict, parent: BaseBinary = None):
-        particle_type = data['particleType']
-        if particle_type == ParticleType.Billboard:
-            return BillboardOptions.from_json(data, parent)
-        elif particle_type == ParticleType.Directional:
-            return DirectionalOptions.from_json(data, parent)
-        elif particle_type == ParticleType.Stripe:
-            return StripeOptions.from_json(data, parent)
-        elif particle_type == ParticleType.SmoothStripe:
-            return SmoothStripeOptions.from_json(data, parent)
-        else:
-            return PointLineFreeOptions.from_json(data, parent)
+class PointLineFreeOptions(Structure):
+    expression = EnumField(Assist)
+    y_direction = EnumField(Ahead)
+    rotational_axis = EnumField(RotateAxis, 'B4x')
 
 
-@dataclass
-class PointLineFreeOptions(BaseBinary):
-    expression: Assist = fieldex('B')
-    y_direction: Ahead = fieldex('B')
-    rotational_axis: RotateAxis = fieldex('B4x')
+class BillboardOptions(Structure):
+    expression = EnumField(BillboardAssist)
+    y_direction = EnumField(BillboardAhead)
+    rotational_axis = EnumField(RotateAxis, 'B4x')
 
 
-@dataclass
-class BillboardOptions(BaseBinary):
-    expression: BillboardAssist = fieldex('B')
-    y_direction: BillboardAhead = fieldex('B')
-    rotational_axis: RotateAxis = fieldex('B4x')
+class DirectionalOptions(Structure):
+    expression = EnumField(Assist)
+    y_direction = EnumField(Ahead)
+    rotational_axis = EnumField(RotateAxis)
+    speed_based_vertical = boolean()
+    render_surface = EnumField(Face)
+    directional_pivot = EnumField(DirectionalPivot, 'Bx')
 
 
-@dataclass
-class DirectionalOptions(BaseBinary):
-    expression: Assist = fieldex('B')
-    y_direction: Ahead = fieldex('B')
-    rotational_axis: RotateAxis = fieldex('B')
-    speed_based_vertical: bool = fieldex('B')
-    render_surface: Face = fieldex('B')
-    directional_pivot: DirectionalPivot = fieldex('Bx')
+class StripeOptions(Structure):
+    expression = EnumField(StripeAssist)
+    y_direction = EnumField(Ahead)
+    rotational_axis = EnumField(RotateAxis)
+    num_tube_vertices = u8('Bx')
+    type2 = u8('Bx', skip_json=True)
 
-
-@dataclass
-class StripeOptions(BaseBinary):
-    expression: StripeAssist = fieldex('B')
-    y_direction: Ahead = fieldex('B')
-    rotational_axis: RotateAxis = fieldex('B')
-    num_tube_vertices: int = fieldex('Bx')
-    type2: int = fieldex('Bx', ignore_json=True)
-
-    connect: StripeConnect = fieldex(ignore_binary=True)
-    initial_prev_axis: StripeInitialPrevAxis = fieldex(ignore_binary=True)
-    texmap_type: StripeTexmapType = fieldex(ignore_binary=True)
+    connect = EnumField(StripeConnect, skip_binary=True)
+    initial_prev_axis = EnumField(StripeInitialPrevAxis, skip_binary=True)
+    texmap_type = EnumField(StripeTexmapType, skip_binary=True)
 
     def to_json(self) -> dict:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask.value)
@@ -171,18 +137,17 @@ class StripeOptions(BaseBinary):
         return super().to_bytes()
 
 
-@dataclass
-class SmoothStripeOptions(BaseBinary):
-    expression: StripeAssist = fieldex('B')
-    y_direction: Ahead = fieldex('B')
-    rotational_axis: RotateAxis = fieldex('B')
-    num_tube_vertices: int = fieldex('B')
-    num_interpolation_divisions: int = fieldex('B')
-    type2: int = fieldex('Bx', ignore_json=True)
+class SmoothStripeOptions(Structure):
+    expression = EnumField(StripeAssist)
+    y_direction = EnumField(Ahead)
+    rotational_axis = EnumField(RotateAxis)
+    num_tube_vertices = u8()
+    num_interpolation_divisions = u8()
+    type2 = u8('Bx', skip_json=True)
 
-    connect: StripeConnect = fieldex(ignore_binary=True)
-    initial_prev_axis: StripeInitialPrevAxis = fieldex(ignore_binary=True)
-    texmap_type: StripeTexmapType = fieldex(ignore_binary=True)
+    connect = EnumField(StripeConnect, skip_binary=True)
+    initial_prev_axis = EnumField(StripeInitialPrevAxis, skip_binary=True)
+    texmap_type = EnumField(StripeTexmapType, skip_binary=True)
 
     def to_json(self) -> dict:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask.value)
@@ -193,3 +158,17 @@ class SmoothStripeOptions(BaseBinary):
     def to_bytes(self) -> bytes:
         self.type2 = int(self.connect) | int(self.initial_prev_axis) | int(self.texmap_type)
         return super().to_bytes()
+
+
+def get_options(emitter: Structure) -> Field:
+    particle_type = emitter.particle_type
+    if particle_type == ParticleType.Billboard:
+        return StructField(BillboardOptions)
+    elif particle_type == ParticleType.Directional:
+        return StructField(DirectionalOptions)
+    elif particle_type == ParticleType.Stripe:
+        return StructField(StripeOptions)
+    elif particle_type == ParticleType.SmoothStripe:
+        return StructField(SmoothStripeOptions)
+    else:
+        return StructField(PointLineFreeOptions)

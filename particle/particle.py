@@ -3,30 +3,27 @@
 # particle.py
 # Particle entry definition
 
-from dataclasses import dataclass
-
-from common.common import BaseBinary, fieldex
+from common.field import *
 from common.gx import *
 from common.nw4r import VEC2, VEC3
 from particle.texture import ParticleTextures
 
 
-@dataclass
-class ParticleData(BaseBinary):
+class ParticleData(Structure):
 
     # Size of particle
-    data_size: int = fieldex('I', ignore_json=True)
+    data_size = u32(skip_json=True)
 
     # Colors
-    color1_primary: GXColor = fieldex()
-    color1_secondary: GXColor = fieldex()
-    color2_primary: GXColor = fieldex()
-    color2_secondary: GXColor = fieldex()
+    color1_primary = StructField(GXColor)
+    color1_secondary = StructField(GXColor)
+    color2_primary = StructField(GXColor)
+    color2_secondary = StructField(GXColor)
 
     # Scale / Rotation / Translation
-    particle_size: VEC2 = fieldex()
-    particle_scale: VEC2 = fieldex()
-    particle_rotation: VEC3 = fieldex()
+    particle_size = StructField(VEC2)
+    particle_scale = StructField(VEC2)
+    particle_rotation = StructField(VEC3)
 
     # Mostly texture-specific data
-    textures: ParticleTextures = fieldex(unroll_content=True, align_pad=4)
+    textures = StructField(ParticleTextures, True, alignment=4)

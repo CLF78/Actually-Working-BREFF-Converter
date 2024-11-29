@@ -4,9 +4,9 @@
 # Emitter flag definitions
 
 from enum import Enum, Flag
-from dataclasses import dataclass
 
-from common.common import BaseBinary, fieldex, snake_to_camel
+from common.common import snake_to_camel
+from common.field import *
 
 class CommonFlag(Flag):
     SyncChildrenLifetime       = 1 << 0  # Child elements are also deleted when the emitter is deleted
@@ -68,11 +68,10 @@ class DrawFlag(Flag):
     XYLinkScale                 = 1 << 14 # X is to be used in place of Y which is the scale of the particle
 
 
-@dataclass
-class EmitterFlags(BaseBinary):
-    type_specific_flags: TypeSpecificFlag = fieldex('B')
-    emit_flags: EmitFlag = fieldex('H')
-    shape: EmitterShape = fieldex('B')
+class EmitterFlags(Structure):
+    type_specific_flags = FlagEnumField(TypeSpecificFlag)
+    emit_flags = FlagEnumField(EmitFlag, 'H')
+    shape = EnumField(EmitterShape)
 
     def get_allowed_flags(self) -> TypeSpecificFlag:
         if self.shape == EmitterShape.Line:

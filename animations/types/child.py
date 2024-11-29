@@ -2,6 +2,7 @@
 
 # child.py
 # Child animation definitions
+# TODO rewrite file
 
 from enum import Flag, auto
 from dataclasses import dataclass

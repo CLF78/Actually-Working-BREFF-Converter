@@ -3,27 +3,23 @@
 # nw4r.py
 # Common nw4r definitions
 
-from dataclasses import dataclass
-from common.common import BaseBinary, fieldex
+from common.field import *
 
-@dataclass
-class VEC2(BaseBinary):
-    x: float = fieldex('f')
-    y: float = fieldex('f')
+class VEC2(Structure):
+    x = f32()
+    y = f32()
 
 
-@dataclass
-class VEC3(BaseBinary):
-    x: float = fieldex('f')
-    y: float = fieldex('f')
-    z: float = fieldex('f')
+class VEC3(Structure):
+    x = f32()
+    y = f32()
+    z = f32()
 
 
-@dataclass
-class MTX23(BaseBinary):
-    _00: float = fieldex('f')
-    _01: float = fieldex('f')
-    _02: float = fieldex('f')
-    _10: float = fieldex('f')
-    _11: float = fieldex('f')
-    _12: float = fieldex('f')
+class MTX23(Structure):
+    _00 = f32()
+    _01 = f32()
+    _02 = f32()
+    _10 = f32()
+    _11 = f32()
+    _12 = f32()

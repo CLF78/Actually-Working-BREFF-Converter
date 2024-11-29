@@ -4,8 +4,8 @@
 # Common GX definitions
 
 from enum import auto
-from dataclasses import dataclass
-from common.common import BaseBinary, CEnum, fieldex
+from common.common import CEnum
+from common.field import *
 
 class GXCompare(CEnum):
 	Never = auto()
@@ -212,9 +212,8 @@ class GXTexWrapMode(CEnum):
 	Mirror = auto()
 
 
-@dataclass
-class GXColor(BaseBinary):
-	r: int = fieldex('B')
-	g: int = fieldex('B')
-	b: int = fieldex('B')
-	a: int = fieldex('B', default=0xFF)
+class GXColor(Structure):
+	r = u8()
+	g = u8()
+	b = u8()
+	a = u8(default=0xFF)
