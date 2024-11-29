@@ -6,7 +6,7 @@
 from enum import Flag
 from typing import Any
 from common.field import *
-from animations.tables.key import *
+from animations.tables import *
 
 class AnimationColorTargets(Flag):
     Red   = 1 << 0
@@ -65,9 +65,9 @@ class AnimationU8BeautifiedFrame(Structure):
 
 # TODO finish and beautify format
 class AnimationU8(Structure):
-    key_frame_table = StructField(KeyFrameTable, skip_json=True)
+    key_frame_table = StructField(AnimDataTable, skip_json=True)
     key_frames = ListField(StructField(AnimationU8Key), lambda x: x.key_frame_table.entry_count, alignment=4, skip_json=True)
-    range_table = StructField(KeyFrameTable, cond=lambda x: x.parent.range_table_size != 0, skip_json=True)
+    range_table = StructField(AnimDataTable, cond=lambda x: x.parent.range_table_size != 0, skip_json=True)
     range_values = ListField(StructField(AnimationU8RangeValue), lambda x: x.range_table.entry_count, cond=lambda x: x.parent.range_table_size != 0, alignment=4, skip_json=True)
     # Random table header (conditional)
     # Random entries (conditional, align by 4)

@@ -3,9 +3,7 @@
 # texture.py
 # Particle texture definitions
 
-from dataclasses import dataclass
-
-from common.common import BaseBinary, CEnum
+from common.common import CEnum
 from common.gx import *
 from common.nw4r import VEC2
 

@@ -3,7 +3,6 @@
 # emitter.py
 # Emitter entry definitions
 
-from common.common import fieldex
 from common.field import *
 from common.gx import *
 from common.nw4r import VEC3, MTX23
