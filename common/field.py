@@ -86,10 +86,23 @@ class Field:
 
 class StructureMeta(type):
     def __new__(cls, name: str, bases: tuple, class_dict: dict[str, Any]):
-        fields = {k: v for k, v in class_dict.items() if isinstance(v, Field)}
+
+        # Get the base class fields
+        fields = {}
+        for base in bases:
+            a = getattr(base, '_fields_', {})
+            print(base, a)
+            fields.update(a)
+
+        # Add the class' own fields
+        fields.update({k: v for k, v in class_dict.items() if isinstance(v, Field)})
+
+        # Set the private names and apply the dictionary
         for field_name, field in fields.items():
             field.__set_name__(cls, field_name)
         class_dict['_fields_'] = fields
+
+        # Continue
         return super().__new__(cls, name, bases, class_dict)
 
 

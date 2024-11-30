@@ -49,10 +49,9 @@ class NameTableEntry(Structure):
         return super().to_bytes()
 
 
-class NameTable(Structure):
-    base = StructField(AnimDataTable)
-    name_ptrs = ListField(u32(), lambda x: x.base.entry_count)
-    names = ListField(StructField(NameTableEntry), lambda x: x.base.entry_count)
+class NameTable(AnimDataTable):
+    name_ptrs = ListField(u32(), lambda x: x.entry_count)
+    names = ListField(StructField(NameTableEntry), lambda x: x.entry_count)
 
     def to_bytes(self) -> bytes:
         self.name_ptrs = [0] * len(self.names)

@@ -30,16 +30,14 @@ class AnimationU8RangeValue(Structure):
     values = ListField(u8(), lambda x: 2 * x.parent.parent.get_param_count())
 
 
-def get_key_data(key: Structure) -> Field:
-    key: AnimationU8Key = key
-    if key.base.value_type == KeyType.Fixed:
+def get_key_data(key: 'AnimationU8Key') -> Field:
+    if key.value_type == KeyType.Fixed:
         return StructField(AnimationU8KeyFixed, True)
     else:
         return StructField(AnimationU8KeyRangeRandom, True)
 
 
-class AnimationU8Key(Structure):
-    base = StructField(KeyFrameBase, True)
+class AnimationU8Key(KeyFrameBase):
     curve_types = ListField(EnumField(KeyCurveType), lambda x: x.parent.parent.get_param_count())
     padd = ListField(u8(), lambda x: 8 - x.parent.parent.get_param_count(), skip_json=True)
     key_data = UnionField(get_key_data)
