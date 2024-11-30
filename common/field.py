@@ -1,5 +1,5 @@
 import struct
-from enum import Enum, Flag
+from enum import IntEnum, IntFlag
 from typing import Type, Callable, Any, Union, Optional
 from common.common import align, pad, snake_to_camel
 
@@ -337,7 +337,7 @@ class string(Field):
 
 
 class EnumField(Field):
-    def __init__(self, enum_type: Type[Enum], fmt: str = 'B', default: int = 0, mask: int = -1, **kwargs) -> None:
+    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', default: int = 0, mask: Union[int, IntEnum] = -1, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
         self.enum_type = enum_type
         self.mask = mask
@@ -346,28 +346,28 @@ class EnumField(Field):
         value, offset = super().from_bytes(data, offset, parent)
         return self.enum_type(value & self.mask), offset
 
-    def to_bytes(self, value: Enum) -> bytes:
+    def to_bytes(self, value: IntEnum) -> bytes:
         return super().to_bytes(value.value)
 
-    def from_json(self, value: str, parent: Optional[Structure] = None) -> Enum:
+    def from_json(self, value: str, parent: Optional[Structure] = None) -> IntEnum:
         return self.enum_type[value & self.mask]
 
-    def to_json(self, value: Enum) -> str:
+    def to_json(self, value: IntEnum) -> str:
         return value.name
 
 
 class FlagEnumField(EnumField):
-    def __init__(self, enum_type: Type[Flag], fmt: str = 'B', default: int = 0, mask: int = -1, **kwargs) -> None:
+    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', default: int = 0, mask: Union[int, IntFlag] = -1, **kwargs) -> None:
         super().__init__(enum_type, fmt, default, mask, **kwargs)
 
-    def from_json(self, value: dict[str, bool], parent: Optional[Structure] = None) -> Flag:
+    def from_json(self, value: dict[str, bool], parent: Optional[Structure] = None) -> IntFlag:
         result = self.enum_type(self.default)
         for flag_name, is_set in value.items():
             if is_set:
-                result |= self.enum_type[flag_name].value
+                result |= self.enum_type[flag_name]
         return result
 
-    def to_json(self, value: Flag) -> dict[str, bool]:
+    def to_json(self, value: IntFlag) -> dict[str, bool]:
         result = {}
         for flag in self.enum_type:
             result[flag.name] = bool(flag & value)

@@ -3,18 +3,18 @@
 # u8.py
 # Particle U8 animation definitions
 
-from enum import Flag
+from enum import IntFlag
 from typing import Any
 from common.field import *
 from animations.tables import *
 
-class AnimationColorTargets(Flag):
+class AnimationColorTargets(IntFlag):
     Red   = 1 << 0
     Green = 1 << 1
     Blue  = 1 << 2
 
 
-class AnimationOtherTargets(Flag):
+class AnimationOtherTargets(IntFlag):
     Main = 1 << 0
 
 
@@ -38,19 +38,13 @@ def get_key_data(key: 'AnimationU8Key') -> Field:
 
 
 class AnimationU8Key(KeyFrameBase):
-    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask.value), lambda x: x.parent.parent.get_param_count())
+    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), lambda x: x.parent.parent.get_param_count())
     padd = ListField(u8(), lambda x: 8 - x.parent.parent.get_param_count(), skip_json=True)
     key_data = UnionField(get_key_data)
-    # Key type 0:
-    # - Couple of u8s for each enabled target
-    # Key type 1:
-    # - Range table index u16 + 2 bytes padding
-    # Key type 2:
-    # - Random table seed u16 + 2 bytes padding
 
 
 class AnimationU8BeautifiedTarget(Structure):
-    interp_type = EnumField(KeyCurveType, mask=KeyCurveType.Mask.value)
+    interp_type = EnumField(KeyCurveType, mask=KeyCurveType.Mask)
     values = ListField(u8(), 2, cond=lambda x: x.parent.value_type != KeyType.Random)
 
 

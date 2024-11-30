@@ -3,9 +3,9 @@
 # flags.py
 # Animation flag definitions
 
-from enum import Enum, Flag
+from enum import IntEnum, IntFlag
 
-class AnimProcessFlag(Flag):
+class AnimProcessFlag(IntFlag):
     SyncRand        = 1 << 2
     Stop            = 1 << 3 # Animation processes are stopped.
     EmitterTiming   = 1 << 4 # The animation will run during emitter time.
@@ -14,7 +14,7 @@ class AnimProcessFlag(Flag):
     Fitting         = 1 << 7 # Expansion and contraction are performed according to the lifetime.
 
 
-class AnimTargetU8(Enum):
+class AnimTargetU8(IntEnum):
     Color1Primary = 0
     Alpha1Primary = 3
     Color1Secondary = 4
@@ -27,7 +27,7 @@ class AnimTargetU8(Enum):
     AlphaCompareRef1 = 120
 
 
-class AnimTargetF32(Enum):
+class AnimTargetF32(IntEnum):
     ParticleSize = 16
     ParticleScale = 24
     ParticleRotation = 32
@@ -42,21 +42,21 @@ class AnimTargetF32(Enum):
     TextureIndTranslation = 96
 
 
-class AnimTargetRotate(Enum):
+class AnimTargetRotate(IntEnum):
     ParticleRotation = 32
 
 
-class AnimTargetTexture(Enum):
+class AnimTargetTexture(IntEnum):
     Texture1 = 104
     Texture2 = 108
     TextureInd = 112
 
 
-class AnimTargetChild(Enum):
+class AnimTargetChild(IntEnum):
     Child = 0
 
 
-class AnimTargetField(Enum):
+class AnimTargetField(IntEnum):
     FieldGravity = 0
     FieldSpeed = 1
     FieldMagnet = 2
@@ -67,14 +67,14 @@ class AnimTargetField(Enum):
     FieldTail = 8
 
 
-class AnimTargetPostField(Enum):
+class AnimTargetPostField(IntEnum):
     PostFieldSize = 0
     PostFieldRotation = 12
     PostFieldTranslation = 24
 
 
 # TODO figure out what emitter field each of these affects for more accurate names
-class AnimTargetEmitterF32(Enum):
+class AnimTargetEmitterF32(IntEnum):
     EmitterParam = 44
     EmitterScale = 124
     EmitterRotation = 136
@@ -87,7 +87,7 @@ class AnimTargetEmitterF32(Enum):
     EmitterEmission = 8
 
 
-class AnimType(Enum):
+class AnimType(IntEnum):
     ParticleU8 = 0
     PostField = 2 # v11 only?
     ParticleF32 = 3
@@ -142,7 +142,7 @@ TargetTypeMap = {
 }
 
 
-def get_type_from_target(target: Enum, baked: bool) -> AnimType:
+def get_type_from_target(target: IntEnum, baked: bool) -> AnimType:
     for anim_type, targets in TargetTypeMap.items():
         if target in targets:
             return AnimType.ParticleF32 if (anim_type == AnimType.ParticleRotate and baked) else anim_type
@@ -151,13 +151,13 @@ def get_type_from_target(target: Enum, baked: bool) -> AnimType:
 
 def get_target_from_type(type: AnimType, kind_value: int) -> str:
     for target in TargetTypeMap[type]:
-        if target.value == kind_value:
+        if target == kind_value:
             return target.name
     raise ValueError(f'Unknown target {kind_value} for animation type {type}')
 
 
 # Stupid ass workaround for Python's inability to properly handle duplicate enum values
-def get_target_from_string(target: str) -> Enum:
+def get_target_from_string(target: str) -> IntEnum:
     for targets in TargetTypeMap.values():
         for value in targets:
             if value.name == target:

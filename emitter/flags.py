@@ -3,12 +3,12 @@
 # flags.py
 # Emitter flag definitions
 
-from enum import Enum, Flag
+from enum import IntEnum, IntFlag
 
 from common.common import snake_to_camel
 from common.field import *
 
-class CommonFlag(Flag):
+class CommonFlag(IntFlag):
     SyncChildrenLifetime       = 1 << 0  # Child elements are also deleted when the emitter is deleted
     Invisible                  = 1 << 1  # Suppresses the rendering of the ParticleManager held by this emitter (does not propagate to child emitters)
     InfiniteLifetime           = 1 << 2  # The emitter has an infinite lifetime (maximum u32 value)
@@ -24,7 +24,7 @@ class CommonFlag(Flag):
     RelocateComplete           = 1 << 31 # ??
 
 
-class EmitterShape(Enum):
+class EmitterShape(IntEnum):
     Disc     = 0
     Line     = 1
     Cube     = 5
@@ -34,7 +34,7 @@ class EmitterShape(Enum):
     Torus    = 10
 
 
-class EmitFlag(Flag):
+class EmitFlag(IntFlag):
     LodEnabled    = 1 << 0  # Enables LOD
     Unk4          = 1 << 2  # Does not seem to have any effect
     BillboardY    = 1 << 7  # Enables Billboard Y
@@ -44,13 +44,13 @@ class EmitFlag(Flag):
     Instance      = 1 << 11 # ??
 
 
-class TypeSpecificFlag(Flag):
+class TypeSpecificFlag(IntFlag):
     FlatDensity = 1 << 0 # Makes the density uniform (Disc, Cube, Cylinder, Sphere, Torus)
     LinkedSize  = 1 << 1 # Links size of Y and Z to X (Cube, Sphere) or Z to X (Disc, Cylinder, Torus)
     LineCenter  = 1 << 2 # Line only, not sure of the purpose
 
 
-class DrawFlag(Flag):
+class DrawFlag(IntFlag):
     ZCompareEnabled             = 1 << 0  # Z-compare is enabled
     ZUpdateEnabled              = 1 << 1  # Z-update is enabled
     ZCompareBeforeTex           = 1 << 2  # Z-compare is performed before texture processing

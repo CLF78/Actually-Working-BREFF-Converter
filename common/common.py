@@ -6,7 +6,7 @@
 import struct
 from dataclasses import dataclass, field, fields, Field, MISSING
 from typing import Optional, Union, TypeVar, Type, get_origin, final
-from enum import Flag, Enum
+from enum import Enum, IntEnum, Flag
 
 T = TypeVar('T', bound='BaseBinary')
 META_FILE = 'meta.json5'
@@ -72,7 +72,7 @@ def fieldex(structure: str = None, ignore_binary: bool = False, ignore_json: boo
 
 
 # An enum whose value starts from zero
-class CEnum(Enum):
+class CEnum(IntEnum):
     @classmethod
     def _generate_next_value_(cls, name, start, count, last_values):
         return last_values[-1] + 1 if last_values else 0
