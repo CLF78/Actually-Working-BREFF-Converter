@@ -29,6 +29,7 @@ class KeyCurveType(CEnum):
     Linear = auto()
     Hermite = auto()
     Step = auto()
+    Mask = auto()
 
 
 class KeyFrameBase(Structure):

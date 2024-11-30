@@ -337,27 +337,28 @@ class string(Field):
 
 
 class EnumField(Field):
-    def __init__(self, enum_type: Type[Enum], fmt: str = 'B', default: int = 0, **kwargs) -> None:
+    def __init__(self, enum_type: Type[Enum], fmt: str = 'B', default: int = 0, mask: int = -1, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
         self.enum_type = enum_type
+        self.mask = mask
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
         value, offset = super().from_bytes(data, offset, parent)
-        return self.enum_type(value), offset
+        return self.enum_type(value & self.mask), offset
 
     def to_bytes(self, value: Enum) -> bytes:
         return super().to_bytes(value.value)
 
     def from_json(self, value: str, parent: Optional[Structure] = None) -> Enum:
-        return self.enum_type[value]
+        return self.enum_type[value & self.mask]
 
     def to_json(self, value: Enum) -> str:
         return value.name
 
 
 class FlagEnumField(EnumField):
-    def __init__(self, enum_type: Type[Flag], fmt: str = 'B', default: int = 0, **kwargs) -> None:
-        super().__init__(enum_type, fmt, default, **kwargs)
+    def __init__(self, enum_type: Type[Flag], fmt: str = 'B', default: int = 0, mask: int = -1, **kwargs) -> None:
+        super().__init__(enum_type, fmt, default, mask, **kwargs)
 
     def from_json(self, value: dict[str, bool], parent: Optional[Structure] = None) -> Flag:
         result = self.enum_type(self.default)

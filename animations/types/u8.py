@@ -19,11 +19,11 @@ class AnimationOtherTargets(Flag):
 
 
 class AnimationU8KeyFixed(Structure):
-    values = ListField(u8(), lambda x: 2 * x.parent.parent.parent.get_param_count())
+    values = ListField(u8(), lambda x: x.parent.parent.parent.get_param_count(), alignment=2)
 
 
 class AnimationU8KeyRangeRandom(Structure):
-    idx = u16('H2x')
+    idx = u16()
 
 
 class AnimationU8RangeValue(Structure):
@@ -38,7 +38,7 @@ def get_key_data(key: 'AnimationU8Key') -> Field:
 
 
 class AnimationU8Key(KeyFrameBase):
-    curve_types = ListField(EnumField(KeyCurveType), lambda x: x.parent.parent.get_param_count())
+    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask.value), lambda x: x.parent.parent.get_param_count())
     padd = ListField(u8(), lambda x: 8 - x.parent.parent.get_param_count(), skip_json=True)
     key_data = UnionField(get_key_data)
     # Key type 0:
@@ -50,7 +50,7 @@ class AnimationU8Key(KeyFrameBase):
 
 
 class AnimationU8BeautifiedTarget(Structure):
-    interp_type = EnumField(KeyCurveType)
+    interp_type = EnumField(KeyCurveType, mask=KeyCurveType.Mask.value)
     values = ListField(u8(), 2, cond=lambda x: x.parent.value_type != KeyType.Random)
 
 
@@ -67,8 +67,8 @@ class AnimationU8(Structure):
     key_frames = ListField(StructField(AnimationU8Key), lambda x: x.key_frame_table.entry_count, alignment=4, skip_json=True)
     range_table = StructField(AnimDataTable, cond=lambda x: x.parent.range_table_size != 0, skip_json=True)
     range_values = ListField(StructField(AnimationU8RangeValue), lambda x: x.range_table.entry_count, cond=lambda x: x.parent.range_table_size != 0, alignment=4, skip_json=True)
-    # Random table header (conditional)
-    # Random entries (conditional, align by 4)
+    random_table = StructField(AnimDataTable, cond=lambda x: x.parent.random_table_size != 0, skip_json=True)
+    random_pool = ListField(StructField(AnimationU8RangeValue), lambda x: x.random_table.entry_count, cond=lambda x: x.parent.random_table_size != 0, alignment=4)
 
     def to_json(self) -> dict[str, Any]:
         return super().to_json()
