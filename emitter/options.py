@@ -120,11 +120,11 @@ class StripeOptions(Structure):
     y_direction = EnumField(Ahead)
     rotational_axis = EnumField(RotateAxis)
     num_tube_vertices = u8('Bx')
-    type2 = u8('Bx', skip_json=True)
+    type2 = u8('Bx', cond=skip_json)
 
-    connect = EnumField(StripeConnect, skip_binary=True)
-    initial_prev_axis = EnumField(StripeInitialPrevAxis, skip_binary=True)
-    texmap_type = EnumField(StripeTexmapType, skip_binary=True)
+    connect = EnumField(StripeConnect, cond=skip_binary)
+    initial_prev_axis = EnumField(StripeInitialPrevAxis, cond=skip_binary)
+    texmap_type = EnumField(StripeTexmapType, cond=skip_binary)
 
     def to_json(self) -> dict:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
@@ -143,11 +143,11 @@ class SmoothStripeOptions(Structure):
     rotational_axis = EnumField(RotateAxis)
     num_tube_vertices = u8()
     num_interpolation_divisions = u8()
-    type2 = u8('Bx', skip_json=True)
+    type2 = u8('Bx', cond=skip_json)
 
-    connect = EnumField(StripeConnect, skip_binary=True)
-    initial_prev_axis = EnumField(StripeInitialPrevAxis, skip_binary=True)
-    texmap_type = EnumField(StripeTexmapType, skip_binary=True)
+    connect = EnumField(StripeConnect, cond=skip_binary)
+    initial_prev_axis = EnumField(StripeInitialPrevAxis, cond=skip_binary)
+    texmap_type = EnumField(StripeTexmapType, cond=skip_binary)
 
     def to_json(self) -> dict:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
@@ -158,17 +158,3 @@ class SmoothStripeOptions(Structure):
     def to_bytes(self) -> bytes:
         self.type2 = int(self.connect) | int(self.initial_prev_axis) | int(self.texmap_type)
         return super().to_bytes()
-
-
-def get_options(emitter: Structure) -> Field:
-    match emitter.particle_type:
-        case ParticleType.Billboard:
-            return StructField(BillboardOptions)
-        case ParticleType.Directional:
-            return StructField(DirectionalOptions)
-        case ParticleType.Stripe:
-            return StructField(StripeOptions)
-        case ParticleType.SmoothStripe:
-            return StructField(SmoothStripeOptions)
-        case _:
-            return StructField(PointLineFreeOptions)

@@ -7,43 +7,45 @@ from common.field import *
 from animations.flags import *
 from animations.types.u8 import AnimationU8
 
-def get_anim_data(header: 'AnimationHeader') -> Field:
-
-    # Get necessary data
-    header.is_baked = header.magic == 0xAB
-    header.target = get_target_from_type(header.curve_type, header.kind_type)
-
-    # Create the data
-    # TODO write method
-    match header.target:
-        case AnimTargetU8.Color1Primary.name | AnimTargetU8.Alpha1Primary.name | \
-             AnimTargetU8.Color1Secondary.name | AnimTargetU8.Alpha1Secondary.name | \
-             AnimTargetU8.Color2Primary.name | AnimTargetU8.Alpha2Primary.name | \
-             AnimTargetU8.Color2Secondary.name | AnimTargetU8.Alpha2Secondary.name | \
-             AnimTargetU8.AlphaCompareRef0.name | AnimTargetU8.AlphaCompareRef1.name:
-            return StructField(AnimationU8, True) if not header.is_baked else padding(1)
-
-        # Unknown data type (yet)
-        case _:
-            return padding(1)
-
-
 class AnimationHeader(Structure):
+    def has_frame_count(self, is_json: bool) -> bool:
+        return not is_json or not self.is_init
+
+    def has_loop_count(self, is_json: bool) -> bool:
+        return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
+
+    def get_param_count(self):
+        return bin(self.kind_enable).count('1')
+
+    def get_anim_data(self) -> Field:
+
+        # Get necessary data
+        self.is_baked = self.magic == 0xAB
+
+        # Create the data
+        # TODO finish writing method
+        match self.curve_type:
+            case AnimType.ParticleU8:
+                return StructField(AnimationU8, True) if not self.is_baked else padding(1)
+
+            # Unknown data type (yet)
+            case _:
+                return padding(1)
 
     # Stupid ass workaround for Python's inability to properly handle duplicate enum values
-    target = string(skip_binary=True)
-    is_init = boolean(skip_binary=True)
-    is_baked = boolean(skip_binary=True)
+    target = string(cond=skip_binary)
+    is_init = boolean(cond=skip_binary)
+    is_baked = boolean(cond=skip_binary)
 
-    magic = u8(skip_json=True)
-    kind_type = u8(skip_json=True)
-    curve_type = EnumField(AnimType, skip_json=True)
-    kind_enable = u8(skip_json=True)
+    magic = u8(cond=skip_json)
+    kind_type = u8(cond=skip_json)
+    curve_type = EnumField(AnimType, cond=skip_json)
+    kind_enable = u8(cond=skip_json)
 
     process_flag = FlagEnumField(AnimProcessFlag)
-    loop_count = u8()
+    loop_count = u8(cond=has_loop_count)
     random_seed = u16()
-    frame_count = u16('H2x', default=1, cond=lambda x: not x.is_init)
+    frame_count = u16('H2x', default=1, cond=has_frame_count)
 
     # TODO remove these from the JSON
     key_table_size = u32()
@@ -77,6 +79,3 @@ class AnimationHeader(Structure):
                     self.name_table_size + self.info_table_size
 
         return size
-
-    def get_param_count(self):
-        return bin(self.kind_enable).count('1')

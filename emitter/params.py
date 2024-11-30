@@ -35,17 +35,3 @@ class CylindereSphereTorusParams(Structure):
     angle_end = f32()
     y_size = f32()
     z_size = f32()
-
-
-def get_emitter_params(emitter: Structure) -> Field:
-    match emitter.emitter_flags.shape:
-        case EmitterShape.Point:
-            return padding(24)
-        case EmitterShape.Disc:
-            return StructField(DiscParams)
-        case EmitterShape.Line:
-            return StructField(LineParams)
-        case EmitterShape.Cube:
-            return StructField(CubeParams)
-        case _:
-            return StructField(CylindereSphereTorusParams)

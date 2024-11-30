@@ -49,7 +49,7 @@ class TEVStage(Structure):
 class TEVStages(Structure):
 
     # Number of TEV stages
-    num_tev_stages = u8(skip_json=True)
+    num_tev_stages = u8(cond=skip_json)
 
     # Obsolete flag
     flag_clamp = boolean()
@@ -58,45 +58,44 @@ class TEVStages(Structure):
     indirect_target_stages = u8()
 
     # TEV Texture value (unsure of purpose)
-    textures = ListField(u8(), 4, skip_json=True)
+    textures = ListField(u8(), 4, cond=skip_json)
 
     # TEV stage colors
-    colors = ListField(StructField(TEVStageColor), 4, skip_json=True)
+    colors = ListField(StructField(TEVStageColor), 4, cond=skip_json)
 
     # TEV color operations
-    colorops = ListField(StructField(TEVStageColorOp), 4, skip_json=True)
+    colorops = ListField(StructField(TEVStageColorOp), 4, cond=skip_json)
 
     # TEV stage alphas
-    alphas = ListField(StructField(TEVStageAlpha), 4, skip_json=True)
+    alphas = ListField(StructField(TEVStageAlpha), 4, cond=skip_json)
 
     # TEV alpha operations
-    alphaops = ListField(StructField(TEVStageAlphaOp), 4, skip_json=True)
+    alphaops = ListField(StructField(TEVStageAlphaOp), 4, cond=skip_json)
 
     # TEV constant colors
-    kcolors = ListField(EnumField(GXTevKColorSel), 4, skip_json=True)
+    kcolors = ListField(EnumField(GXTevKColorSel), 4, cond=skip_json)
 
     # TEV constant alphas
-    kalphas = ListField(EnumField(GXTevKAlphaSel), 4, skip_json=True)
+    kalphas = ListField(EnumField(GXTevKAlphaSel), 4, cond=skip_json)
 
     # Parsed TEV stages
-    tev_stages = ListField(StructField(TEVStage), skip_binary=True) # Handled manually
+    tev_stages = ListField(StructField(TEVStage), cond=skip_binary) # Handled manually
 
     def to_json(self) -> dict:
 
         # Parse each stage
-        self.tev_stages.clear()
-        for i in range(1, self.num_tev_stages + 1):
+        for i in range(self.num_tev_stages):
             stage = TEVStage()
-            stage.texture = self.textures[i][1]
-            stage.colors = self.colors[i][1]
-            stage.colorop = self.colorops[i][1]
-            stage.alphas = self.alphas[i][1]
-            stage.alphaop = self.alphaops[i][1]
-            stage.constant_color_selection = self.kcolors[i][1]
-            stage.constant_alpha_selection = self.kalphas[i][1]
-            self.tev_stages.append((type(stage), stage))
+            stage.texture = self.textures[i]
+            stage.colors = self.colors[i]
+            stage.colorop = self.colorops[i]
+            stage.alphas = self.alphas[i]
+            stage.alphaop = self.alphaops[i]
+            stage.constant_color_selection = self.kcolors[i]
+            stage.constant_alpha_selection = self.kalphas[i]
+            self.tev_stages.append(stage)
 
-        # Return result
+        # Let the parser do the rest
         return super().to_json()
 
     def to_bytes(self) -> bytes:
@@ -106,12 +105,13 @@ class TEVStages(Structure):
 
         # Unpack each stage into the fields
         for data in self.tev_stages:
-            self.textures.append((TEVStages.textures.item_field, data.texture))
-            self.colors.append((TEVStages.colors.item_field, data.colors))
-            self.colorops.append((TEVStages.colorops.item_field, data.colorop))
-            self.alphas.append((TEVStages.alphas.item_field, data.alphas))
-            self.alphaops.append((TEVStages.alphaops.item_field, data.alphaop))
-            self.kcolors.append((TEVStages.kcolors.item_field, data.constant_color_selection))
-            self.kalphas.append((TEVStages.kalphas.item_field, data.constant_alpha_selection))
+            self.textures.append(data.texture)
+            self.colors.append(data.colors)
+            self.colorops.append(data.colorop)
+            self.alphas.append(data.alphas)
+            self.alphaops.append(data.alphaop)
+            self.kcolors.append(data.constant_color_selection)
+            self.kalphas.append(data.constant_alpha_selection)
 
+        # Let the parser do the rest
         return super().to_bytes()

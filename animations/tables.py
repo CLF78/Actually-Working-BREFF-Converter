@@ -15,7 +15,6 @@ from common.nw4r import NameString
 class AnimDataTable(Structure):
     entry_count = u16('H2x')
 
-
 #############
 # Key Table #
 #############
@@ -34,19 +33,21 @@ class KeyCurveType(CEnum):
 
 
 class KeyFrameBase(Structure):
-    frame = u16(default=0, cond=lambda x: not x.parent.parent.is_init)
-    value_type = EnumField(KeyType, 'Bx')
+    def has_frame(self, is_json: bool) -> bool:
+        return not is_json or not self.parent.parent.is_init
 
+    frame = u16(default=0, cond=has_frame)
+    value_type = EnumField(KeyType, 'Bx')
 
 ##############
 # Name Table #
 ##############
 
 class NameTable(AnimDataTable):
-    name_ptrs = ListField(u32(), lambda x: x.entry_count)
-    names = ListField(StructField(NameString), lambda x: x.entry_count)
+    name_ptrs = ListField(u32(), AnimDataTable.entry_count)
+    names = ListField(StructField(NameString), AnimDataTable.entry_count)
 
     def to_bytes(self) -> bytes:
-        self.name_ptrs = [u32(), 0] * len(self.names)
+        self.name_ptrs = [0] * len(self.names)
         self.name_table_size = len(self.names)
         return super().to_bytes()

@@ -24,55 +24,55 @@ class ParticleTexture(Structure):
     reverse_mode = EnumField(ReverseMode)
     rotation_offset_random = u32()
     rotation_offset = f32()
-    name = string()
+    name = StructField(NameString, unroll=True)
 
 
 class ParticleTextures(Structure):
 
     # Texture scales
-    texture_scales = ListField(StructField(VEC2), 3, skip_json=True)
+    texture_scales = ListField(StructField(VEC2), 3, cond=skip_json)
 
     # Texture rotations
-    texture_rotations = ListField(f32(), 3, skip_json=True)
+    texture_rotations = ListField(f32(), 3, cond=skip_json)
 
     # Texture translations
-    texture_translations = ListField(StructField(VEC2), 3, skip_json=True)
+    texture_translations = ListField(StructField(VEC2), 3, cond=skip_json)
 
     # Texture wrap / reverse flags
-    texture_wrap = u16('12xH', skip_json=True)
-    texture_reverse = u8(skip_json=True)
+    texture_wrap = u16('12xH', cond=skip_json)
+    texture_reverse = u8(cond=skip_json)
 
     # Alpha compare values
-    alpha_compare_value0 = u8(skip_json=True)
-    alpha_compare_value1 = u8(skip_json=True)
+    alpha_compare_value0 = u8(cond=skip_json)
+    alpha_compare_value1 = u8(cond=skip_json)
 
     # Rotation offsets
-    rotate_offset_randoms = ListField(u8(), 3, skip_json=True)
-    rotate_offsets = ListField(f32(), 3, skip_json=True)
+    rotate_offset_randoms = ListField(u8(), 3, cond=skip_json)
+    rotate_offsets = ListField(f32(), 3, cond=skip_json)
 
     # Texture names
-    texture_names = ListField(StructField(NameString), 3, skip_json=True)
+    texture_names = ListField(StructField(NameString), 3, cond=skip_json)
 
     # Parsed data for prettier output
-    textures = ListField(StructField(ParticleTexture), skip_binary=True)
+    textures = ListField(StructField(ParticleTexture), cond=skip_binary)
 
     def to_json(self) -> dict:
 
-        # Parse each texture
-        self.textures.clear()
+        # Assemble each texture
         for i in range(3):
             texture = ParticleTexture()
-            texture.scale = self.texture_scales[i][1]
-            texture.rotation = self.texture_rotations[i][1]
-            texture.translation = self.texture_translations[i][1]
+            texture.scale = self.texture_scales[i]
+            texture.rotation = self.texture_rotations[i]
+            texture.translation = self.texture_translations[i]
             texture.wrapS = GXTexWrapMode((self.texture_wrap >> (i * 4)) & 3)
             texture.wrapT = GXTexWrapMode((self.texture_wrap >> (i * 4 + 2)) & 3)
             texture.reverse_mode = ReverseMode((self.texture_reverse >> (i * 2)) & ReverseMode.Mask)
-            texture.rotation_offset_random = self.rotate_offset_randoms[i][1]
-            texture.rotation_offset = self.rotate_offsets[i][1]
-            texture.name = self.texture_names[i][1].name
-            self.textures.append((type(texture), texture))
+            texture.rotation_offset_random = self.rotate_offset_randoms[i]
+            texture.rotation_offset = self.rotate_offsets[i]
+            texture.name = self.texture_names[i]
+            self.textures.append(texture)
 
+        # Let the parser do the rest
         return super().to_json()
 
     def to_bytes(self) -> bytes:
@@ -82,19 +82,17 @@ class ParticleTextures(Structure):
         if len(self.textures) > 3:
             self.textures = self.textures[:3]
 
-        # Unpack each texture into the fields
+        # Unpack each texture into the respective fields
         for i, data in enumerate(self.textures):
-            tex_name = NameString(self)
-            tex_name.name = data.name
-
-            self.texture_scales.append((ParticleTextures.texture_scales.item_field, data.scale))
-            self.texture_rotations.append((ParticleTextures.texture_rotations.item_field, data.rotation))
-            self.texture_translations.append((ParticleTextures.texture_translations.item_field, data.translation))
+            self.texture_scales.append(data.scale)
+            self.texture_rotations.append(data.rotation)
+            self.texture_translations.append(data.translation)
             self.texture_wrap |= (data.wrapS << i * 4)
             self.texture_wrap |= (data.wrapT << i * 4 + 2)
             self.texture_reverse |= (data.reverse_mode << i * 2)
-            self.rotate_offset_randoms.append((ParticleTextures.rotate_offset_randoms, data.rotation_offset_random))
-            self.rotate_offsets.append((ParticleTextures.rotate_offsets, data.rotation_offset))
-            self.texture_names.append((ParticleTextures.texture_names.item_field), tex_name)
+            self.rotate_offset_randoms.append(data.rotation_offset_random)
+            self.rotate_offsets.append(data.rotation_offset)
+            self.texture_names.append(data.name)
 
+        # Let the parser do the rest
         return super().to_bytes()

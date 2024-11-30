@@ -79,21 +79,21 @@ class EmitterFlags(Structure):
         return TypeSpecificFlag(0)
 
     def to_json(self) -> dict:
+        data = super().to_json()
 
         # Remove all flags that are not allowed
         for flag in TypeSpecificFlag:
             if flag not in self.get_allowed_flags():
+                data[snake_to_camel('type_specific_flags')].pop(flag.name)
                 self.type_specific_flags &= ~flag
 
         # Return data
-        return super().to_json()
+        return data
 
     def to_bytes(self) -> bytes:
 
         # Remove all flags that are not allowed
-        for flag in TypeSpecificFlag:
-            if flag not in self.get_allowed_flags():
-                self.type_specific_flags &= ~flag
+        self.type_specific_flags &= self.get_allowed_flags()
 
         # Return data
         return super().to_bytes()

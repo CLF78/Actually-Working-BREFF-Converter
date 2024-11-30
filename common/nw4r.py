@@ -26,7 +26,7 @@ class MTX23(Structure):
 
 
 class NameString(Structure):
-    name_len = u16(skip_json=True)
+    name_len = u16(cond=skip_json)
     name = string()
 
     def to_bytes(self) -> bytes:

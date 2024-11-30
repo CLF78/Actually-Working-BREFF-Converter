@@ -10,14 +10,42 @@ from emitter.alpha_swing import AlphaSwing
 from emitter.color_input import ColorInput
 from emitter.flags import CommonFlag, EmitterFlags, DrawFlag
 from emitter.lighting import Lighting
-from emitter.options import ParticleType, get_options
-from emitter.params import get_emitter_params
+from emitter.options import *
+from emitter.params import *
 from emitter.tev import TEVStages
 
 class EmitterData(Structure):
 
+    def get_emitter_params(self) -> Field:
+        match self.emitter_flags.shape:
+            case EmitterShape.Point:
+                return padding(24)
+            case EmitterShape.Disc:
+                return StructField(DiscParams)
+            case EmitterShape.Line:
+                return StructField(LineParams)
+            case EmitterShape.Cube:
+                return StructField(CubeParams)
+            case _:
+                return StructField(CylindereSphereTorusParams)
+
+
+    def get_options(self) -> Field:
+        match self.particle_type:
+            case ParticleType.Billboard:
+                return StructField(BillboardOptions)
+            case ParticleType.Directional:
+                return StructField(DirectionalOptions)
+            case ParticleType.Stripe:
+                return StructField(StripeOptions)
+            case ParticleType.SmoothStripe:
+                return StructField(SmoothStripeOptions)
+            case _:
+                return StructField(PointLineFreeOptions)
+
+
     # Size of emitter
-    data_size = u32('4xI', skip_json=True)
+    data_size = u32('4xI', cond=skip_json)
 
     # Various flags
     common_flags = FlagEnumField(CommonFlag, 'I')

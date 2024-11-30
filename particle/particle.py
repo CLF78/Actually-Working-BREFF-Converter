@@ -12,7 +12,7 @@ from particle.texture import ParticleTextures
 class ParticleData(Structure):
 
     # Size of particle
-    data_size = u32(skip_json=True)
+    data_size = u32(cond=skip_json)
 
     # Colors
     color1_primary = StructField(GXColor)

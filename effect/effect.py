@@ -19,7 +19,7 @@ class EffectTableEntry(Structure):
     name = StructField(NameString, unroll=True)
     data_offset = u32()
     data_size = u32()
-    data = raw(length=lambda x: x.data_size, skip_json=True, skip_binary=True) # Handled manually
+    data = raw(length=data_size, cond=skip_all) # Handled manually
 
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional[Structure] = None) -> tuple[Structure, int]:
@@ -35,17 +35,17 @@ class EffectTableEntry(Structure):
 class EffectTable(Structure):
     table_size = u32()
     entry_count = u16('H2x')
-    entries = ListField(StructField(EffectTableEntry), lambda x: x.entry_count)
+    entries = ListField(StructField(EffectTableEntry), entry_count)
 
-
-def get_project_data_size(project: 'EffectProject') -> int:
-    return project.get_parent(BinaryBlockHeader).block_size - project.project_header_size
 
 class EffectProject(Structure):
-    project_header_size = u32('I8x', skip_json=True)
-    project_name_length = u16('H2x', skip_json=True)
+    def get_data_size(self) -> int:
+        return self.get_parent(BinaryBlockHeader).block_size - self.project_header_size
+
+    project_header_size = u32('I8x', cond=skip_json)
+    project_name_length = u16('H2x', cond=skip_json)
     project_name = string(alignment=4)
-    project_data = raw(length=get_project_data_size, skip_json=True)
+    project_data = raw(length=get_data_size, cond=skip_json)
 
     def to_bytes(self) -> bytes:
         self.project_header_size = self.size(end_field=EffectProject.project_name)
@@ -54,8 +54,8 @@ class EffectProject(Structure):
 
 
 class BinaryBlockHeader(Structure):
-    magic = raw(default=b'REFF', length=4, skip_json=True)
-    block_size = u32(skip_json=True)
+    magic = raw(default=b'REFF', length=4, cond=skip_json)
+    block_size = u32(cond=skip_json)
     project = StructField(EffectProject, unroll=True)
 
     def to_bytes(self) -> bytes:
@@ -64,12 +64,12 @@ class BinaryBlockHeader(Structure):
 
 
 class BinaryFileHeader(Structure):
-    magic = raw(default=b'REFF', length=4, skip_json=True)
-    bom = u16(default=0xFEFF, skip_json=True)
+    magic = raw(default=b'REFF', length=4, cond=skip_json)
+    bom = u16(default=0xFEFF, cond=skip_json)
     version = u16()
-    file_length = u32(skip_json=True)
-    header_length = u16(default=0x10, skip_json=True)
-    block_count = u16(default=1, skip_json=True)
+    file_length = u32(cond=skip_json)
+    header_length = u16(default=0x10, cond=skip_json)
+    block_count = u16(default=1, cond=skip_json)
     block = StructField(BinaryBlockHeader, unroll=True)
 
     def to_bytes(self) -> bytes:

@@ -33,7 +33,7 @@ def decode(src: Path, dst: Path) -> None:
 
     # Create the effect table from the project data, then iterate it
     effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
-    for _, entry in effect_table.entries:
+    for entry in effect_table.entries:
 
         print(f'Parsing {entry.name.name}...')
         effect, _ = Effect.from_bytes(entry.data)
