@@ -161,14 +161,14 @@ class SmoothStripeOptions(Structure):
 
 
 def get_options(emitter: Structure) -> Field:
-    particle_type = emitter.particle_type
-    if particle_type == ParticleType.Billboard:
-        return StructField(BillboardOptions)
-    elif particle_type == ParticleType.Directional:
-        return StructField(DirectionalOptions)
-    elif particle_type == ParticleType.Stripe:
-        return StructField(StripeOptions)
-    elif particle_type == ParticleType.SmoothStripe:
-        return StructField(SmoothStripeOptions)
-    else:
-        return StructField(PointLineFreeOptions)
+    match emitter.particle_type:
+        case ParticleType.Billboard:
+            return StructField(BillboardOptions)
+        case ParticleType.Directional:
+            return StructField(DirectionalOptions)
+        case ParticleType.Stripe:
+            return StructField(StripeOptions)
+        case ParticleType.SmoothStripe:
+            return StructField(SmoothStripeOptions)
+        case _:
+            return StructField(PointLineFreeOptions)

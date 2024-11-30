@@ -58,46 +58,25 @@ class TEVStages(Structure):
     indirect_target_stages = u8()
 
     # TEV Texture value (unsure of purpose)
-    texture1 = u8(skip_json=True)
-    texture2 = u8(skip_json=True)
-    texture3 = u8(skip_json=True)
-    texture4 = u8(skip_json=True)
+    textures = ListField(u8(), 4, skip_json=True)
 
     # TEV stage colors
-    colors1 = StructField(TEVStageColor, skip_json=True)
-    colors2 = StructField(TEVStageColor, skip_json=True)
-    colors3 = StructField(TEVStageColor, skip_json=True)
-    colors4 = StructField(TEVStageColor, skip_json=True)
+    colors = ListField(StructField(TEVStageColor), 4, skip_json=True)
 
     # TEV color operations
-    colorop1 = StructField(TEVStageColorOp, skip_json=True)
-    colorop2 = StructField(TEVStageColorOp, skip_json=True)
-    colorop3 = StructField(TEVStageColorOp, skip_json=True)
-    colorop4 = StructField(TEVStageColorOp, skip_json=True)
+    colorops = ListField(StructField(TEVStageColorOp), 4, skip_json=True)
 
     # TEV stage alphas
-    alphas1 = StructField(TEVStageAlpha, skip_json=True)
-    alphas2 = StructField(TEVStageAlpha, skip_json=True)
-    alphas3 = StructField(TEVStageAlpha, skip_json=True)
-    alphas4 = StructField(TEVStageAlpha, skip_json=True)
+    alphas = ListField(StructField(TEVStageAlpha), 4, skip_json=True)
 
     # TEV alpha operations
-    alphaop1 = StructField(TEVStageAlphaOp, skip_json=True)
-    alphaop2 = StructField(TEVStageAlphaOp, skip_json=True)
-    alphaop3 = StructField(TEVStageAlphaOp, skip_json=True)
-    alphaop4 = StructField(TEVStageAlphaOp, skip_json=True)
+    alphaops = ListField(StructField(TEVStageAlphaOp), 4, skip_json=True)
 
     # TEV constant colors
-    kcolor1 = EnumField(GXTevKColorSel, skip_json=True)
-    kcolor2 = EnumField(GXTevKColorSel, skip_json=True)
-    kcolor3 = EnumField(GXTevKColorSel, skip_json=True)
-    kcolor4 = EnumField(GXTevKColorSel, skip_json=True)
+    kcolors = ListField(EnumField(GXTevKColorSel), 4, skip_json=True)
 
     # TEV constant alphas
-    kalpha1 = EnumField(GXTevKAlphaSel, skip_json=True)
-    kalpha2 = EnumField(GXTevKAlphaSel, skip_json=True)
-    kalpha3 = EnumField(GXTevKAlphaSel, skip_json=True)
-    kalpha4 = EnumField(GXTevKAlphaSel, skip_json=True)
+    kalphas = ListField(EnumField(GXTevKAlphaSel), 4, skip_json=True)
 
     # Parsed TEV stages
     tev_stages = ListField(StructField(TEVStage), skip_binary=True) # Handled manually
@@ -108,13 +87,13 @@ class TEVStages(Structure):
         self.tev_stages.clear()
         for i in range(1, self.num_tev_stages + 1):
             stage = TEVStage()
-            stage.texture = getattr(self, f'texture{i}')
-            stage.colors = getattr(self, f'colors{i}')
-            stage.colorop = getattr(self, f'colorop{i}')
-            stage.alphas = getattr(self, f'alphas{i}')
-            stage.alphaop = getattr(self, f'alphaop{i}')
-            stage.constant_color_selection = getattr(self, f'kcolor{i}')
-            stage.constant_alpha_selection = getattr(self, f'kalpha{i}')
+            stage.texture = self.textures[i][1]
+            stage.colors = self.colors[i][1]
+            stage.colorop = self.colorops[i][1]
+            stage.alphas = self.alphas[i][1]
+            stage.alphaop = self.alphaops[i][1]
+            stage.constant_color_selection = self.kcolors[i][1]
+            stage.constant_alpha_selection = self.kalphas[i][1]
             self.tev_stages.append((type(stage), stage))
 
         # Return result
@@ -126,13 +105,13 @@ class TEVStages(Structure):
         self.num_tev_stages = len(self.tev_stages)
 
         # Unpack each stage into the fields
-        for i, data in enumerate(self.tev_stages, 1):
-            setattr(self, f'texture{i}', data.texture)
-            setattr(self, f'colors{i}', data.colors)
-            setattr(self, f'colorop{i}', data.colorop)
-            setattr(self, f'alphas{i}', data.alphas)
-            setattr(self, f'alphaop{i}', data.alphaop)
-            setattr(self, f'kcolor{i}', data.constant_color_selection)
-            setattr(self, f'kalpha{i}', data.constant_alpha_selection)
+        for data in self.tev_stages:
+            self.textures.append((TEVStages.textures.item_field, data.texture))
+            self.colors.append((TEVStages.colors.item_field, data.colors))
+            self.colorops.append((TEVStages.colorops.item_field, data.colorop))
+            self.alphas.append((TEVStages.alphas.item_field, data.alphas))
+            self.alphaops.append((TEVStages.alphaops.item_field, data.alphaop))
+            self.kcolors.append((TEVStages.kcolors.item_field, data.constant_color_selection))
+            self.kalphas.append((TEVStages.kalphas.item_field, data.constant_alpha_selection))
 
         return super().to_bytes()

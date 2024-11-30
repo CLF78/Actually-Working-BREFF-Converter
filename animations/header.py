@@ -7,10 +7,9 @@ from common.field import *
 from animations.flags import *
 from animations.types.u8 import AnimationU8
 
-def get_anim_data(header: Structure) -> Field:
+def get_anim_data(header: 'AnimationHeader') -> Field:
 
     # Get necessary data
-    header: AnimationHeader = header
     header.is_baked = header.magic == 0xAB
     header.target = get_target_from_type(header.curve_type, header.kind_type)
 
@@ -44,7 +43,7 @@ class AnimationHeader(Structure):
     process_flag = FlagEnumField(AnimProcessFlag)
     loop_count = u8()
     random_seed = u16()
-    frame_count = u16('H2x')
+    frame_count = u16('H2x', default=1, cond=lambda x: not x.is_init)
 
     # TODO remove these from the JSON
     key_table_size = u32()
@@ -57,7 +56,7 @@ class AnimationHeader(Structure):
 
     # TODO remove this garbage
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional['Structure'] = None) -> tuple['Structure', int]:
+    def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional[Structure] = None) -> tuple[Structure, int]:
         data, _ = super().from_bytes(data, offset, parent)
         return data, offset + data.size()
 

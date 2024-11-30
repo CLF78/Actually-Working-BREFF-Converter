@@ -38,14 +38,14 @@ class CylindereSphereTorusParams(Structure):
 
 
 def get_emitter_params(emitter: Structure) -> Field:
-    shape = emitter.emitter_flags.shape
-    if shape == EmitterShape.Point:
-        return padding(24)
-    elif shape == EmitterShape.Disc:
-        return StructField(DiscParams)
-    elif shape == EmitterShape.Line:
-        return StructField(LineParams)
-    elif shape == EmitterShape.Cube:
-        return StructField(CubeParams)
-    else:
-        return StructField(CylindereSphereTorusParams)
+    match emitter.emitter_flags.shape:
+        case EmitterShape.Point:
+            return padding(24)
+        case EmitterShape.Disc:
+            return StructField(DiscParams)
+        case EmitterShape.Line:
+            return StructField(LineParams)
+        case EmitterShape.Cube:
+            return StructField(CubeParams)
+        case _:
+            return StructField(CylindereSphereTorusParams)

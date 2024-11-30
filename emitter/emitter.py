@@ -23,7 +23,7 @@ class EmitterData(Structure):
     common_flags = FlagEnumField(CommonFlag, 'I')
 
     # Emitter shape and other flags
-    emitter_flags = StructField(EmitterFlags, True)
+    emitter_flags = StructField(EmitterFlags, unroll=True)
 
     # Maximum emit time
     emit_lifetime = u16()
@@ -129,7 +129,7 @@ class EmitterData(Structure):
     alpha_compare_operator = EnumField(GXAlphaOp)
 
     # TEV stages
-    tev_stages = StructField(TEVStages, True)
+    tev_stages = StructField(TEVStages, unroll=True)
 
     # Blend information
     blend_type = EnumField(GXBlendMode)

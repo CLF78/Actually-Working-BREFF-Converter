@@ -23,3 +23,12 @@ class MTX23(Structure):
     _10 = f32()
     _11 = f32()
     _12 = f32()
+
+
+class NameString(Structure):
+    name_len = u16(skip_json=True)
+    name = string()
+
+    def to_bytes(self) -> bytes:
+        self.name_len = len(self.name) + 1
+        return super().to_bytes()

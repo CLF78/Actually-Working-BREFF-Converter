@@ -5,7 +5,7 @@
 
 from common.common import CEnum
 from common.gx import *
-from common.nw4r import VEC2
+from common.nw4r import NameString, VEC2
 
 class ReverseMode(CEnum):
     NoReverse = auto()
@@ -30,19 +30,13 @@ class ParticleTexture(Structure):
 class ParticleTextures(Structure):
 
     # Texture scales
-    texture_scale1 = StructField(VEC2, skip_json=True)
-    texture_scale2 = StructField(VEC2, skip_json=True)
-    texture_scale3 = StructField(VEC2, skip_json=True)
+    texture_scales = ListField(StructField(VEC2), 3, skip_json=True)
 
     # Texture rotations
-    texture_rotation1 = f32(skip_json=True)
-    texture_rotation2 = f32(skip_json=True)
-    texture_rotation3 = f32(skip_json=True)
+    texture_rotations = ListField(f32(), 3, skip_json=True)
 
     # Texture translations
-    texture_translate1 = StructField(VEC2, skip_json=True)
-    texture_translate2 = StructField(VEC2, skip_json=True)
-    texture_translate3 = StructField(VEC2, skip_json=True)
+    texture_translations = ListField(StructField(VEC2), 3, skip_json=True)
 
     # Texture wrap / reverse flags
     texture_wrap = u16('12xH', skip_json=True)
@@ -53,20 +47,11 @@ class ParticleTextures(Structure):
     alpha_compare_value1 = u8(skip_json=True)
 
     # Rotation offsets
-    rotate_offset_random1 = u8(skip_json=True)
-    rotate_offset_random2 = u8(skip_json=True)
-    rotate_offset_random3 = u8(skip_json=True)
-    rotate_offset1 = f32(skip_json=True)
-    rotate_offset2 = f32(skip_json=True)
-    rotate_offset3 = f32(skip_json=True)
+    rotate_offset_randoms = ListField(u8(), 3, skip_json=True)
+    rotate_offsets = ListField(f32(), 3, skip_json=True)
 
     # Texture names
-    texture_name_len1 = u16(skip_json=True)
-    texture_name1 = string(skip_json=True)
-    texture_name_len2 = u16(skip_json=True)
-    texture_name2 = string(skip_json=True)
-    texture_name_len3 = u16(skip_json=True)
-    texture_name3 = string(skip_json=True)
+    texture_names = ListField(StructField(NameString), 3, skip_json=True)
 
     # Parsed data for prettier output
     textures = ListField(StructField(ParticleTexture), skip_binary=True)
@@ -77,15 +62,15 @@ class ParticleTextures(Structure):
         self.textures.clear()
         for i in range(3):
             texture = ParticleTexture()
-            texture.scale = getattr(self, f'texture_scale{i+1}')
-            texture.rotation = getattr(self, f'texture_rotation{i+1}')
-            texture.translation = getattr(self, f'texture_translate{i+1}')
+            texture.scale = self.texture_scales[i][1]
+            texture.rotation = self.texture_rotations[i][1]
+            texture.translation = self.texture_translations[i][1]
             texture.wrapS = GXTexWrapMode((self.texture_wrap >> (i * 4)) & 3)
             texture.wrapT = GXTexWrapMode((self.texture_wrap >> (i * 4 + 2)) & 3)
             texture.reverse_mode = ReverseMode((self.texture_reverse >> (i * 2)) & ReverseMode.Mask)
-            texture.rotation_offset_random = getattr(self, f'rotate_offset_random{i+1}')
-            texture.rotation_offset = getattr(self, f'rotate_offset{i+1}')
-            texture.name = getattr(self, f'texture_name{i+1}')
+            texture.rotation_offset_random = self.rotate_offset_randoms[i][1]
+            texture.rotation_offset = self.rotate_offsets[i][1]
+            texture.name = self.texture_names[i][1].name
             self.textures.append((type(texture), texture))
 
         return super().to_json()
@@ -99,15 +84,17 @@ class ParticleTextures(Structure):
 
         # Unpack each texture into the fields
         for i, data in enumerate(self.textures):
-            setattr(self, f'texture_scale{i+1}', data.scale)
-            setattr(self, f'texture_rotation{i+1}', data.rotation)
-            setattr(self, f'texture_translate{i+1}', data.translation)
+            tex_name = NameString(self)
+            tex_name.name = data.name
+
+            self.texture_scales.append((ParticleTextures.texture_scales.item_field, data.scale))
+            self.texture_rotations.append((ParticleTextures.texture_rotations.item_field, data.rotation))
+            self.texture_translations.append((ParticleTextures.texture_translations.item_field, data.translation))
             self.texture_wrap |= (data.wrapS << i * 4)
             self.texture_wrap |= (data.wrapT << i * 4 + 2)
             self.texture_reverse |= (data.reverse_mode << i * 2)
-            setattr(self, f'rotate_offset_random{i+1}', data.rotation_offset_random)
-            setattr(self, f'rotate_offset{i+1}', data.rotation_offset)
-            setattr(self, f'texture_name_len{i+1}', len(data.name) + 1)
-            setattr(self, f'texture_name{i+1}', data.name)
+            self.rotate_offset_randoms.append((ParticleTextures.rotate_offset_randoms, data.rotation_offset_random))
+            self.rotate_offsets.append((ParticleTextures.rotate_offsets, data.rotation_offset))
+            self.texture_names.append((ParticleTextures.texture_names.item_field), tex_name)
 
         return super().to_bytes()

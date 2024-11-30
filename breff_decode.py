@@ -35,9 +35,9 @@ def decode(src: Path, dst: Path) -> None:
     effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
     for _, entry in effect_table.entries:
 
-        print('Parsing', entry.name, '...')
+        print(f'Parsing {entry.name.name}...')
         effect, _ = Effect.from_bytes(entry.data)
-        with open(Path(dst, f'{entry.name}.json5'), 'w', encoding='utf-8') as f:
+        with open(Path(dst, f'{entry.name.name}.json5'), 'w', encoding='utf-8') as f:
             json5.dump(effect.to_json(), f, indent=4)
 
 

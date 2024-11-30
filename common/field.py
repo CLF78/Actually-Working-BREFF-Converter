@@ -1,14 +1,28 @@
 import struct
 from enum import IntEnum, IntFlag
-from typing import Type, Callable, Any, Union, Optional
+from typing import Any, Callable, cast, Callable, Optional, Type, TypeVar
 from common.common import align, pad, snake_to_camel
+
+# Base definitions
+S = TypeVar('S', bound='Structure')
+F = TypeVar('F', bound='Field')
+
+# Field container
+FieldDict = dict[str, 'Field']
+FIELD_LIST = '_fields_'
+
+# Callback function definitions
+FieldCondition = Callable[['Structure'], bool]   # Function to determine whether the field should be skipped
+FieldLength = int | Callable[['Structure'], int] # Function to determine the length of a field (or integer to use a fixed length)
+FieldTypeSelector = Callable[['Structure'], 'Field']   # Function to determine the type of a field
+
 
 class Field:
     """
     Represents a field.
     """
     def __init__(self, fmt: str, default: Any = None, skip_binary: bool = False, skip_json: bool = False,
-                 alignment: int = 1, cond: Optional[Callable[['Structure'], bool]] = None) -> None:
+                 alignment: int = 1, cond: Optional[FieldCondition] = None) -> None:
         """
         Initializes the field.
 
@@ -88,11 +102,9 @@ class StructureMeta(type):
     def __new__(cls, name: str, bases: tuple, class_dict: dict[str, Any]):
 
         # Get the base class fields
-        fields = {}
+        fields: FieldDict = {}
         for base in bases:
-            a = getattr(base, '_fields_', {})
-            print(base, a)
-            fields.update(a)
+            fields.update(getattr(base, FIELD_LIST, {}))
 
         # Add the class' own fields
         fields.update({k: v for k, v in class_dict.items() if isinstance(v, Field)})
@@ -100,7 +112,7 @@ class StructureMeta(type):
         # Set the private names and apply the dictionary
         for field_name, field in fields.items():
             field.__set_name__(cls, field_name)
-        class_dict['_fields_'] = fields
+        class_dict[FIELD_LIST] = fields
 
         # Continue
         return super().__new__(cls, name, bases, class_dict)
@@ -111,7 +123,7 @@ class Structure(metaclass=StructureMeta):
         self.parent = parent
 
         # Copy the field dictionary and set the default for each contained field
-        fields: dict[str, Field] = self._fields_ # type: ignore
+        fields: FieldDict = self._fields_ # type: ignore
         self._fields_ = dict.copy(fields)
         for name, field in fields.items():
             setattr(self, name, field.default)
@@ -125,7 +137,7 @@ class Structure(metaclass=StructureMeta):
     def _from_bytes(self, data: bytes, offset: int = 0) -> int:
 
         # Set up loop
-        fields: dict[str, Field] = self._fields_
+        fields: FieldDict = self._fields_
         for name, field in fields.items():
 
             # Skip field if requested
@@ -137,7 +149,7 @@ class Structure(metaclass=StructureMeta):
                 continue
 
             # TODO remove debug print
-            print(name, type(field), hex(offset))
+            print(f'Decoding field {name} (type {type(field).__name__}) at offset {hex(offset)}')
 
             # Decode field and update offset
             value, offset = field.from_bytes(data, offset, self)
@@ -153,7 +165,7 @@ class Structure(metaclass=StructureMeta):
 
         # Set up loop
         result = b''
-        fields: dict[str, Field] = self._fields_
+        fields: FieldDict = self._fields_
         for name, field in fields.items():
 
             # Skip field if requested
@@ -180,11 +192,15 @@ class Structure(metaclass=StructureMeta):
     def _from_json(self, data: dict[str, Any]) -> None:
 
         # Set up loop
-        fields: dict[str, Field] = self._fields_
+        fields: FieldDict = self._fields_
         for name, field in fields.items():
 
             # Skip if requested
             if field.skip_json:
+                continue
+
+            # Skip field if cond does not match
+            if field.cond and not field.cond(self):
                 continue
 
             # Check if it's a nested structure
@@ -200,11 +216,15 @@ class Structure(metaclass=StructureMeta):
 
         # Set up loop
         result = {}
-        fields: dict[str, Field] = self._fields_
+        fields: FieldDict = self._fields_
         for name, field in fields.items():
 
             # Skip if requested
             if field.skip_json:
+                continue
+
+            # Skip field if cond does not match
+            if field.cond and not field.cond(self):
                 continue
 
             # Get value and encode it
@@ -220,12 +240,12 @@ class Structure(metaclass=StructureMeta):
         # Return result
         return result
 
-    def size(self, start_field: Optional[Field] = None, end_field: Optional[Field] = None) -> int:
+    def size(self, start_field: Optional[F] = None, end_field: Optional[F] = None) -> int:
 
         # Set up loop
         result = 0
         found_start = start_field is None
-        fields: dict[str, Field] = self._fields_
+        fields: FieldDict = self._fields_
         for field in fields.values():
 
             # Find the starting field
@@ -243,6 +263,14 @@ class Structure(metaclass=StructureMeta):
 
         # Return result
         return result
+
+    def get_parent(self, parent_type: Type[S]) -> S:
+        current = self
+        while current:
+            if isinstance(current, parent_type):
+                return cast(S, current)
+            current = current.parent
+        raise ValueError(f'No parent of type {parent_type.__name__} found')
 
 
 class padding(Field):
@@ -303,11 +331,11 @@ class boolean(Field):
 
 
 class raw(Field):
-    def __init__(self, default: bytes = b'', length: Union[int, Callable] = 0, **kwargs) -> None:
+    def __init__(self, default: bytes = b'', length: FieldLength = 0, **kwargs) -> None:
         super().__init__('', default, **kwargs)
         self.length = length
 
-    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
+    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[bytes, int]:
         length = self.length(parent) if callable(self.length) else self.length
         end = offset + length
         return data[offset:end], end
@@ -337,12 +365,13 @@ class string(Field):
 
 
 class EnumField(Field):
-    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', default: int = 0, mask: Union[int, IntEnum] = -1, **kwargs) -> None:
+    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', default: int = 0,
+                 mask: int | IntEnum = -1, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
         self.enum_type = enum_type
         self.mask = mask
 
-    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
+    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[IntEnum, int]:
         value, offset = super().from_bytes(data, offset, parent)
         return self.enum_type(value & self.mask), offset
 
@@ -357,7 +386,8 @@ class EnumField(Field):
 
 
 class FlagEnumField(EnumField):
-    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', default: int = 0, mask: Union[int, IntFlag] = -1, **kwargs) -> None:
+    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', default: int = 0,
+                 mask: int | IntFlag = -1, **kwargs) -> None:
         super().__init__(enum_type, fmt, default, mask, **kwargs)
 
     def from_json(self, value: dict[str, bool], parent: Optional[Structure] = None) -> IntFlag:
@@ -376,7 +406,7 @@ class FlagEnumField(EnumField):
 
 class StructField(Field):
     def __init__(self, struct_type: Type[Structure], unroll: bool = False, **kwargs) -> None:
-        super().__init__(fmt='', default=None, **kwargs)
+        super().__init__('', default=None, **kwargs)
         self.struct_type = struct_type
         self.unroll = unroll
 
@@ -397,11 +427,12 @@ class StructField(Field):
 
 
 class UnionField(Field):
-    def __init__(self, type_selector: Callable[[Structure], Field], **kwargs) -> None:
-        super().__init__(fmt='', default=None, **kwargs)
+    def __init__(self, type_selector: FieldTypeSelector, **kwargs) -> None:
+        super().__init__('', default=None, **kwargs)
         self.type_selector = type_selector
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
+
         # Ensure parent exists
         if not parent:
             raise ValueError('A parent is required for decoding a UnionField!')
@@ -438,16 +469,17 @@ class UnionField(Field):
 
 class ListField(Field):
     current_item_field = '_reserved'
+    ListRet = list[tuple[Field, Any]]
 
-    def __init__(self, item_field: Field, counter: Union[int, Callable] = 0, **kwargs) -> None:
-        super().__init__(fmt='', default=[], **kwargs)
+    def __init__(self, item_field: F, counter: FieldLength = 0, **kwargs) -> None:
+        super().__init__('', default=[], **kwargs)
         self.item_field = item_field
         self.counter = counter
 
         # Ensure this is set to avoid breaking UnionFields
         self.item_field.private_name = self.current_item_field
 
-    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[list, int]:
+    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[ListRet, int]:
 
         # Ensure parent exists
         if not parent:
@@ -476,10 +508,10 @@ class ListField(Field):
         # Return the final list along with the offset
         return value, offset
 
-    def to_bytes(self, value: list[tuple[Field, Any]]) -> bytes:
+    def to_bytes(self, value: ListRet) -> bytes:
         return b''.join(field.to_bytes(item) for field, item in value)
 
-    def from_json(self, value: list, parent: Optional[Structure] = None) -> list:
+    def from_json(self, value: list, parent: Optional[Structure] = None) -> ListRet:
 
         # Ensure parent exists
         if not parent:
@@ -507,7 +539,7 @@ class ListField(Field):
         # Return the updated list
         return data
 
-    def to_json(self, value: list[tuple[Field, Any]]) -> list[Any]:
+    def to_json(self, value: ListRet) -> list[Any]:
         return [field.to_json(item) for field, item in value]
 
     def size(self, instance: Any = None) -> int:

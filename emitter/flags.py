@@ -4,8 +4,6 @@
 # Emitter flag definitions
 
 from enum import IntEnum, IntFlag
-
-from common.common import snake_to_camel
 from common.field import *
 
 class CommonFlag(IntFlag):
@@ -81,15 +79,14 @@ class EmitterFlags(Structure):
         return TypeSpecificFlag(0)
 
     def to_json(self) -> dict:
-        data = super().to_json()
 
         # Remove all flags that are not allowed
         for flag in TypeSpecificFlag:
             if flag not in self.get_allowed_flags():
-                data[snake_to_camel('type_specific_flags')].pop(flag.name)
+                self.type_specific_flags &= ~flag
 
         # Return data
-        return data
+        return super().to_json()
 
     def to_bytes(self) -> bytes:
 

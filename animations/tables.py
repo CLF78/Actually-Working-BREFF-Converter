@@ -6,6 +6,7 @@
 from enum import auto
 from common.common import CEnum
 from common.field import *
+from common.nw4r import NameString
 
 #################
 # Generic Table #
@@ -33,7 +34,7 @@ class KeyCurveType(CEnum):
 
 
 class KeyFrameBase(Structure):
-    frame = u16()
+    frame = u16(default=0, cond=lambda x: not x.parent.parent.is_init)
     value_type = EnumField(KeyType, 'Bx')
 
 
@@ -41,20 +42,11 @@ class KeyFrameBase(Structure):
 # Name Table #
 ##############
 
-class NameTableEntry(Structure):
-    name_len = u16()
-    name = string()
-
-    def to_bytes(self) -> bytes:
-        self.name_len = len(self.name) + 1
-        return super().to_bytes()
-
-
 class NameTable(AnimDataTable):
     name_ptrs = ListField(u32(), lambda x: x.entry_count)
-    names = ListField(StructField(NameTableEntry), lambda x: x.entry_count)
+    names = ListField(StructField(NameString), lambda x: x.entry_count)
 
     def to_bytes(self) -> bytes:
-        self.name_ptrs = [0] * len(self.names)
+        self.name_ptrs = [u32(), 0] * len(self.names)
         self.name_table_size = len(self.names)
         return super().to_bytes()
