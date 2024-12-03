@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-# f32.py
-# Particle F32 animation definitions
-# TODO remove target for texture rotation since it only has one axis
+# rotate.py
+# Particle rotation animation definitions
 
 from enum import IntFlag
 from typing import Any
@@ -31,10 +30,10 @@ def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
 # Key Formats #
 ###############
 
-class AnimationF32KeyFixed(Structure):
+class AnimationRotateKeyFixed(Structure):
     values = ListField(f32(), get_param_count)
 
-class AnimationF32KeyRangeRandom(Structure):
+class AnimationRotateKeyRangeRandom(Structure):
     def get_padding(self) -> int:
         param_size = get_anim_header(self).get_param_count() * 4
         return 0xC + param_size - 0xE
@@ -43,12 +42,12 @@ class AnimationF32KeyRangeRandom(Structure):
     padd = ListField(u8(), get_padding, cond=skip_json)
 
 
-class AnimationF32Key(KeyFrameBase):
+class AnimationRotateKey(KeyFrameBase):
     def get_key_data(self) -> Field:
         if self.value_type == KeyType.Fixed:
-            return StructField(AnimationF32KeyFixed, True)
+            return StructField(AnimationRotateKeyFixed, True)
         else:
-            return StructField(AnimationF32KeyRangeRandom, True)
+            return StructField(AnimationRotateKeyRangeRandom, True)
 
     curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), 8)
     key_data = UnionField(get_key_data)
@@ -57,14 +56,15 @@ class AnimationF32Key(KeyFrameBase):
 # Range Values #
 ################
 
-class AnimationF32Ranges(Structure):
+class AnimationRotateRanges(Structure):
     values = ListField(f32(), lambda self: 2 * get_param_count(self))
+    random_rotation_direction = boolean('?3x')
 
 ##################
 # Parsed Formats #
 ##################
 
-class AnimationF32Target(Structure):
+class AnimationRotateTarget(Structure):
     def has_value(self, _) -> bool:
         return get_key_type(self) == KeyType.Fixed
 
@@ -80,6 +80,9 @@ class AnimationF32Frame(KeyFrameBase):
     def has_random_seed(self, _) -> bool:
         return self.value_type == KeyType.Random
 
+    def has_random_rotation_dir(self, _) -> bool:
+        return self.value_type == KeyType.Range
+
     def has_x_target(self, _) -> bool:
         return check_enabled_target(self, AnimationF32Targets.X)
 
@@ -90,12 +93,16 @@ class AnimationF32Frame(KeyFrameBase):
         return check_enabled_target(self, AnimationF32Targets.Z)
 
     random_seed = u16(cond=has_random_seed)
-    x = StructField(AnimationF32Target, cond=has_x_target)
-    y = StructField(AnimationF32Target, cond=has_y_target)
-    z = StructField(AnimationF32Target, cond=has_z_target)
+    random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
+    x = StructField(AnimationRotateTarget, cond=has_x_target)
+    y = StructField(AnimationRotateTarget, cond=has_y_target)
+    z = StructField(AnimationRotateTarget, cond=has_z_target)
 
 
-class AnimationF32RandomPoolEntry(Structure):
+class AnimationRotateRandomPoolEntry(Structure):
+    def has_random_rotation_dir(self, _) -> bool:
+        return self.value_type == KeyType.Range
+
     def has_x_target(self, _) -> bool:
         return check_enabled_target(self, AnimationF32Targets.X)
 
@@ -105,15 +112,16 @@ class AnimationF32RandomPoolEntry(Structure):
     def has_z_target(self, _) -> bool:
         return check_enabled_target(self, AnimationF32Targets.Z)
 
-    x = StructField(AnimationF32Target, cond=has_x_target)
-    y = StructField(AnimationF32Target, cond=has_y_target)
-    z = StructField(AnimationF32Target, cond=has_z_target)
+    random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
+    x = StructField(AnimationRotateTarget, cond=has_x_target)
+    y = StructField(AnimationRotateTarget, cond=has_y_target)
+    z = StructField(AnimationRotateTarget, cond=has_z_target)
 
 ###############
 # Main Format #
 ###############
 
-class AnimationF32(Structure):
+class AnimationRotate(Structure):
 
     def get_key_count(self) -> int:
         return self.frame_table.entry_count
@@ -131,15 +139,15 @@ class AnimationF32(Structure):
         return self.random_table.entry_count
 
     frame_table = StructField(AnimDataTable, cond=skip_json)
-    frames = ListField(StructField(AnimationF32Key), get_key_count, cond=skip_json)
+    frames = ListField(StructField(AnimationRotateKey), get_key_count, cond=skip_json)
     key_frames = ListField(StructField(AnimationF32Frame), cond=skip_binary) # Parsed version
 
     range_table = StructField(AnimDataTable, cond=has_range_table)
-    range_values = ListField(StructField(AnimationF32Ranges), get_range_count, cond=has_range_table)
+    range_values = ListField(StructField(AnimationRotateRanges), get_range_count, cond=has_range_table)
 
     random_table = StructField(AnimDataTable, cond=has_random_table)
-    random_values = ListField(StructField(AnimationF32Ranges), get_random_count, cond=has_random_table)
-    random_pool = ListField(StructField(AnimationF32RandomPoolEntry, True), cond=skip_binary) # Parsed version
+    random_values = ListField(StructField(AnimationRotateRanges), get_random_count, cond=has_random_table)
+    random_pool = ListField(StructField(AnimationRotateRandomPoolEntry, True), cond=skip_binary) # Parsed version
 
     def to_json(self) -> dict[str, Any]:
 
@@ -154,6 +162,9 @@ class AnimationF32(Structure):
             # Copy the random seed if necessary
             if frame.value_type == KeyType.Random:
                 parsed_frame.random_seed = frame.key_data.idx
+            elif frame.value_type == KeyType.Range:
+                range_idx = frame.key_data.idx
+                parsed_frame.random_rotation_direction = self.range_values[range_idx].random_rotation_direction
 
             # Parse the enabled targets
             i = 0
@@ -161,7 +172,7 @@ class AnimationF32(Structure):
                 if check_enabled_target(frame, target):
 
                     # Create the target and insert it into the data
-                    target_data = AnimationF32Target(parsed_frame)
+                    target_data = AnimationRotateTarget(parsed_frame)
                     setattr(parsed_frame, target.name.lower(), target_data)
 
                     # Get the interpolation and value/range
@@ -170,7 +181,7 @@ class AnimationF32(Structure):
                         target_data.value = frame.key_data.values[i]
                     elif parsed_frame.value_type == KeyType.Range:
                         range_idx = frame.key_data.idx
-                        range_values: AnimationF32Ranges = self.range_values[range_idx]
+                        range_values: AnimationRotateRanges = self.range_values[range_idx]
                         target_data.range = range_values.values[i*2 : i*2 + 2]
 
                     # Update the counter
@@ -183,7 +194,7 @@ class AnimationF32(Structure):
         for entry in self.random_values:
 
             # Create parsed entry
-            pool_entry = AnimationF32RandomPoolEntry(self)
+            pool_entry = AnimationRotateRandomPoolEntry(self)
 
             # Check the enabled targets
             i = 0

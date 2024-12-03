@@ -10,6 +10,7 @@ from animations.types.u8 import AnimationU8
 from animations.types.u8baked import AnimationU8Baked
 from animations.types.f32 import AnimationF32
 from animations.types.f32baked import AnimationF32Baked
+from animations.types.rotate import AnimationRotate
 
 class AnimationHeader(Structure):
     def has_frame_count(self, is_json: bool) -> bool:
@@ -38,6 +39,9 @@ class AnimationHeader(Structure):
 
             case AnimType.ParticleF32:
                 return StructField(AnimationF32 if not self.is_baked else AnimationF32Baked, True)
+
+            case AnimType.ParticleRotate:
+                return StructField(AnimationRotate, True)
 
             # Unknown data type (yet)
             case _:
