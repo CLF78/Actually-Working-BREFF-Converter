@@ -52,6 +52,12 @@ class AnimTargetF32(IntEnum):
     TextureIndTranslation = 96
 
 
+class AnimationF32Targets(IntFlag):
+    X = 1 << 0
+    Y = 1 << 1
+    Z = 1 << 2
+
+
 class AnimTargetRotate(IntEnum):
     ParticleRotate = 32
 
