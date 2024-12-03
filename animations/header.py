@@ -5,6 +5,7 @@
 
 from common.field import *
 from animations.flags import *
+from animations.types.child import AnimationChild
 from animations.types.u8 import AnimationU8
 from animations.types.u8baked import AnimationU8Baked
 
@@ -29,6 +30,9 @@ class AnimationHeader(Structure):
         match self.curve_type:
             case AnimType.ParticleU8:
                 return StructField(AnimationU8 if not self.is_baked else AnimationU8Baked, True)
+
+            case AnimType.Child:
+                return StructField(AnimationChild, True)
 
             # Unknown data type (yet)
             case _:
