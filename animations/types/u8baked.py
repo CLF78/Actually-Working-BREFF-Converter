@@ -23,10 +23,16 @@ def get_param_count(structure: Structure) -> int:
 def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
     return (get_anim_header(structure).kind_enable & target) != 0
 
+##############
+# Key Format #
+##############
 
 class AnimationU8BakedKey(Structure):
     values = ListField(u8(), get_param_count)
 
+##################
+# Parsed Formats #
+##################
 
 class AnimationU8BakedColorFrame(Structure):
     def has_r_target(self, _) -> bool:
