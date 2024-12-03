@@ -53,7 +53,7 @@ class AnimTargetF32(IntEnum):
 
 
 class AnimTargetRotate(IntEnum):
-    ParticleRotation = 32
+    ParticleRotate = 32
 
 
 class AnimTargetTexture(IntEnum):
@@ -123,7 +123,7 @@ TargetTypeMap = {
         AnimTargetF32.TextureIndRotation, AnimTargetF32.TextureIndTranslation, AnimTargetF32.ParticleRotation
     },
 
-    AnimType.ParticleRotate: {AnimTargetRotate.ParticleRotation},
+    AnimType.ParticleRotate: {AnimTargetRotate.ParticleRotate},
 
     AnimType.ParticleTexture: {
         AnimTargetTexture.Texture1, AnimTargetTexture.Texture2, AnimTargetTexture.TextureInd

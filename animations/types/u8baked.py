@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# u8.py
-# Particle U8 animation definitions
+# u8baked.py
+# Particle U8 baked animation definitions
 
 from enum import IntFlag
 from typing import Any

@@ -178,7 +178,7 @@ class AnimationU8(Structure):
     random_table = StructField(AnimDataTable, cond=has_random_table)
     random_values = ListField(StructField(AnimationU8Ranges), get_random_count, cond=has_random_table,
                             alignment=4)
-    random_pool = ListField(StructField(AnimationU8RandomPoolEntry, True), cond=skip_binary)
+    random_pool = ListField(StructField(AnimationU8RandomPoolEntry, True), cond=skip_binary) # Parsed version
 
     def get_targets(self) -> IntFlag:
         match get_anim_header(self).target:
@@ -223,7 +223,7 @@ class AnimationU8(Structure):
                     elif parsed_frame.value_type == KeyType.Range:
                         range_idx = frame.key_data.idx
                         range_values: AnimationU8Ranges = self.range_values[range_idx]
-                        target_data.range = range_values.values[i : i + 2]
+                        target_data.range = range_values.values[i*2 : i*2 + 2]
 
                     # Update the counter
                     i += 1
