@@ -20,6 +20,7 @@ class AnimationHeader(Structure):
     def get_anim_data(self) -> Field:
 
         # Get necessary data
+        self.target = get_target_from_type(self.curve_type, self.kind_type)
         self.is_baked = self.magic == 0xAB
 
         # Create the data
