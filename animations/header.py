@@ -37,7 +37,7 @@ class AnimationHeader(Structure):
             case AnimType.Child:
                 return StructField(AnimationChild, True)
 
-            case AnimType.ParticleF32:
+            case AnimType.ParticleF32 | AnimType.EmitterF32:
                 return StructField(AnimationF32 if not self.is_baked else AnimationF32Baked, True)
 
             case AnimType.ParticleRotate:
