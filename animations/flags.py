@@ -27,6 +27,16 @@ class AnimTargetU8(IntEnum):
     AlphaCompareRef1 = 120
 
 
+class AnimationU8ColorTargets(IntFlag):
+    Red   = 1 << 0
+    Green = 1 << 1
+    Blue  = 1 << 2
+
+
+class AnimationU8AlphaTargets(IntFlag):
+    Alpha = 1 << 0
+
+
 class AnimTargetF32(IntEnum):
     ParticleSize = 16
     ParticleScale = 24

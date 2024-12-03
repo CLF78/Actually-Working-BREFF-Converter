@@ -26,18 +26,6 @@ def get_key_type(structure: Structure) -> KeyType:
 def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
     return (get_anim_header(structure).kind_enable & target) != 0
 
-###########
-# Targets #
-###########
-
-class AnimationU8ColorTargets(IntFlag):
-    Red   = 1 << 0
-    Green = 1 << 1
-    Blue  = 1 << 2
-
-class AnimationU8OtherTargets(IntFlag):
-    Main = 1 << 0
-
 ###############
 # Key Formats #
 ###############
@@ -103,11 +91,11 @@ class AnimationU8ColorTarget(Structure):
     b = StructField(AnimationU8Target, cond=has_b_target)
 
 
-class AnimationU8OtherTarget(Structure):
+class AnimationU8AlphaTarget(Structure):
     def has_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8OtherTargets.Main)
+        return check_enabled_target(self, AnimationU8AlphaTargets.Alpha)
 
-    m = StructField(AnimationU8Target, unroll=True, cond=has_target)
+    a = StructField(AnimationU8Target, unroll=True, cond=has_target)
 
 
 class AnimationU8Frame(KeyFrameBase):
@@ -120,7 +108,7 @@ class AnimationU8Frame(KeyFrameBase):
                 AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
                 return StructField(AnimationU8ColorTarget)
             case _:
-                return StructField(AnimationU8OtherTarget, unroll=True)
+                return StructField(AnimationU8AlphaTarget, unroll=True)
 
     random_seed = u16(cond=has_random_seed)
     targets = UnionField(get_target_format)
@@ -141,11 +129,11 @@ class AnimationU8RandomPoolColorEntry(Structure):
     b = ListField(u8(), 2, cond=has_b_target)
 
 
-class AnimationU8RandomPoolOtherEntry(Structure):
-    def has_m_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8OtherTargets.Main)
+class AnimationU8RandomPoolAlphaEntry(Structure):
+    def has_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationU8AlphaTargets.Alpha)
 
-    m = ListField(u8(), 2, cond=has_m_target)
+    a = ListField(u8(), 2, cond=has_target)
 
 
 class AnimationU8RandomPoolEntry(Structure):
@@ -155,7 +143,7 @@ class AnimationU8RandomPoolEntry(Structure):
                 AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
                 return StructField(AnimationU8RandomPoolColorEntry, unroll=True)
             case _:
-                return StructField(AnimationU8RandomPoolOtherEntry, unroll=True)
+                return StructField(AnimationU8RandomPoolAlphaEntry, unroll=True)
 
     entry = UnionField(get_entry_format)
 
@@ -163,7 +151,6 @@ class AnimationU8RandomPoolEntry(Structure):
 # Main Format #
 ###############
 
-# TODO finish and beautify format
 class AnimationU8(Structure):
 
     def get_key_count(self) -> int:
@@ -200,7 +187,7 @@ class AnimationU8(Structure):
                 AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
                 return AnimationU8ColorTargets
             case _:
-                return AnimationU8OtherTargets
+                return AnimationU8AlphaTargets
 
     def to_json(self) -> dict[str, Any]:
 
@@ -218,9 +205,7 @@ class AnimationU8(Structure):
                 parsed_frame.random_seed = frame.key_data.idx
 
             # Get the key data type, insert it and create the structure
-            key_field: StructField = AnimationU8Frame.targets.type_selector(self)
-            parsed_frame._fields_['targets'] = key_field
-            key_data: AnimationU8ColorTarget | AnimationU8OtherTarget = key_field.struct_type(self)
+            key_data = AnimationU8Frame.targets.detect_field(parsed_frame).struct_type(parsed_frame)
             parsed_frame.targets = key_data
 
             # Parse the enabled targets
@@ -254,9 +239,7 @@ class AnimationU8(Structure):
             pool_entry = AnimationU8RandomPoolEntry(self)
 
             # Get the pool entry data type, insert it and create the structure
-            pool_entry_field: StructField = AnimationU8RandomPoolEntry.entry.type_selector(self)
-            pool_entry._fields_['entry'] = pool_entry_field
-            pool_entry_data = pool_entry_field.struct_type(pool_entry)
+            pool_entry_data = AnimationU8RandomPoolEntry.entry.detect_field(pool_entry).struct_type(pool_entry)
             pool_entry.entry = pool_entry_data
 
             # Check the enabled targets

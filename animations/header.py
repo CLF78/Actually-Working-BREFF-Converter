@@ -6,10 +6,11 @@
 from common.field import *
 from animations.flags import *
 from animations.types.u8 import AnimationU8
+from animations.types.u8baked import AnimationU8Baked
 
 class AnimationHeader(Structure):
     def has_frame_count(self, is_json: bool) -> bool:
-        return not is_json or not self.is_init
+        return not is_json or not (self.is_baked or self.is_init)
 
     def has_loop_count(self, is_json: bool) -> bool:
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
@@ -27,7 +28,7 @@ class AnimationHeader(Structure):
         # TODO finish writing method
         match self.curve_type:
             case AnimType.ParticleU8:
-                return StructField(AnimationU8, True) if not self.is_baked else padding(1)
+                return StructField(AnimationU8 if not self.is_baked else AnimationU8Baked, True)
 
             # Unknown data type (yet)
             case _:

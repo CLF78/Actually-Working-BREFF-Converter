@@ -436,34 +436,23 @@ class UnionField(Field):
         super().__init__('', default=None, **kwargs)
         self.type_selector = type_selector
 
-    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
-
-        # Ensure parent exists
-        if not parent:
-            raise ValueError('A parent is required for decoding a UnionField!')
-
-        # Get the field and replace it if required
+    def detect_field(self, parent: Structure) -> Field:
         selected_field = self.type_selector(parent)
         parent._fields_[self.private_name[1:]] = selected_field
+        return selected_field
 
-        # Use the field for decoding
-        return selected_field.from_bytes(data, offset, parent)
+    def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
+        if not parent:
+            raise ValueError('A parent is required for decoding a UnionField!')
+        return self.detect_field(parent).from_bytes(data, offset, parent)
 
     def to_bytes(self, value: Any) -> bytes:
         raise NotImplementedError('UnionField should not call to_bytes() directly; it must be replaced by the selected field.')
 
     def from_json(self, value: Any, parent: Optional[Structure] = None) -> Any:
-
-        # Ensure parent exists
         if not parent:
             raise ValueError('A parent is required for decoding a UnionField!')
-
-        # Get the field and replace it if required
-        selected_field = self.type_selector(parent)
-        parent._fields_[self.private_name[1:]] = selected_field
-
-        # Use the field for encoding
-        return selected_field.from_json(value, parent)
+        return self.detect_field(parent).from_json(value, parent)
 
     def to_json(self, value: Any) -> Any:
         raise NotImplementedError('UnionField should not call to_json() directly; it must be replaced by the selected field.')
