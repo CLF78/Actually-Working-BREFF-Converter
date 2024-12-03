@@ -49,8 +49,7 @@ class AnimationU8Key(KeyFrameBase):
         else:
             return StructField(AnimationU8KeyRangeRandom, True)
 
-    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), get_param_count)
-    padd = ListField(u8(), lambda self: 8 - get_param_count(self), cond=skip_json)
+    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), 8)
     key_data = UnionField(get_key_data)
 
 ################
@@ -218,7 +217,7 @@ class AnimationU8(Structure):
                     setattr(key_data, target.name[:1].lower(), target_data)
 
                     # Get the interpolation and value/range
-                    target_data.interpolation = frame.curve_types[i]
+                    target_data.interpolation = frame.curve_types[target.value.bit_length() - 1]
                     if parsed_frame.value_type == KeyType.Fixed:
                         target_data.value = frame.key_data.values[i]
                     elif parsed_frame.value_type == KeyType.Range:
