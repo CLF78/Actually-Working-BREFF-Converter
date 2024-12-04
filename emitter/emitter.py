@@ -8,7 +8,7 @@ from common.gx import *
 from common.nw4r import VEC3, MTX23
 from emitter.alpha_swing import AlphaSwing
 from emitter.color_input import ColorInput
-from emitter.flags import CommonFlag, EmitterFlags, DrawFlag
+from emitter.flags import CommonFlag, DrawFlag, EmitterFlags, EmitterShape
 from emitter.lighting import Lighting
 from emitter.options import *
 from emitter.params import *

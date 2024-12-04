@@ -52,10 +52,19 @@ class AnimTargetF32(IntEnum):
     TextureIndTranslation = 96
 
 
-class AnimationF32Targets(IntFlag):
+class AnimationF32VectorTargets(IntFlag):
     X = 1 << 0
     Y = 1 << 1
     Z = 1 << 2
+
+
+class AnimationF32ParamTargets(IntFlag):
+    Param1 = 1 << 0
+    Param2 = 1 << 1
+    Param3 = 1 << 2
+    Param4 = 1 << 3
+    Param5 = 1 << 4
+    Param6 = 1 << 5
 
 
 class AnimTargetRotate(IntEnum):
@@ -89,18 +98,18 @@ class AnimTargetPostField(IntEnum):
     PostFieldTranslation = 24
 
 
-# TODO figure out what emitter field each of these affects for more accurate names
+# These are offsets in the EmitterParameter structure, and not the raw emitter data
 class AnimTargetEmitterF32(IntEnum):
-    EmitterParam = 44
-    EmitterScale = 124
-    EmitterRotation = 136
-    EmitterTranslation = 112
-    EmitterSpeedOrig = 72
-    EmitterSpeedYAxis = 76
-    EmitterSpeedRandom = 80
-    EmitterSpeedNormal = 84
-    EmitterSpeedSpecDir = 92
-    EmitterEmission = 8
+    EmitterEmissionRatio = 8 # 1 param
+    EmitterParam = 44        # 1 to 6 params, depending on shape
+    EmitterSpeedOrig = 72    # 1 param - vel power radiation dir
+    EmitterSpeedYAxis = 76   # 1 param - vel power y axis
+    EmitterSpeedRandom = 80  # 1 param - vel power random dir
+    EmitterSpeedNormal = 84  # 1 param - vel power normal dir
+    EmitterSpeedSpecDir = 92 # 1 param - vel power spec dir
+    EmitterTranslation = 112 # 3 params
+    EmitterScale = 124       # 3 params
+    EmitterRotation = 136    # 3 params
 
 
 class AnimType(IntEnum):
@@ -153,7 +162,7 @@ TargetTypeMap = {
         AnimTargetEmitterF32.EmitterRotation, AnimTargetEmitterF32.EmitterTranslation,
         AnimTargetEmitterF32.EmitterSpeedOrig, AnimTargetEmitterF32.EmitterSpeedYAxis,
         AnimTargetEmitterF32.EmitterSpeedRandom, AnimTargetEmitterF32.EmitterSpeedNormal,
-        AnimTargetEmitterF32.EmitterSpeedSpecDir, AnimTargetEmitterF32.EmitterEmission
+        AnimTargetEmitterF32.EmitterSpeedSpecDir, AnimTargetEmitterF32.EmitterEmissionRatio
     }
 }
 

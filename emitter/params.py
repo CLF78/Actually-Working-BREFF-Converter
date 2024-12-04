@@ -4,7 +4,6 @@
 # Emitter parameter definitions
 
 from common.field import *
-from emitter.flags import EmitterShape
 
 class DiscParams(Structure):
     x_size = f32()

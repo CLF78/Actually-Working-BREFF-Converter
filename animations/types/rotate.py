@@ -84,13 +84,13 @@ class AnimationF32Frame(KeyFrameBase):
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.X)
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Y)
+        return check_enabled_target(self, AnimationF32VectorTargets.Y)
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Z)
+        return check_enabled_target(self, AnimationF32VectorTargets.Z)
 
     random_seed = u16(cond=has_random_seed)
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
@@ -104,13 +104,13 @@ class AnimationRotateRandomPoolEntry(Structure):
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.X)
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Y)
+        return check_enabled_target(self, AnimationF32VectorTargets.Y)
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Z)
+        return check_enabled_target(self, AnimationF32VectorTargets.Z)
 
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
     x = StructField(AnimationRotateTarget, cond=has_x_target)
@@ -168,7 +168,7 @@ class AnimationRotate(Structure):
 
             # Parse the enabled targets
             i = 0
-            for target in AnimationF32Targets:
+            for target in AnimationF32VectorTargets:
                 if check_enabled_target(frame, target):
 
                     # Create the target and insert it into the data
@@ -198,7 +198,7 @@ class AnimationRotate(Structure):
 
             # Check the enabled targets
             i = 0
-            for target in AnimationF32Targets:
+            for target in AnimationF32VectorTargets:
                 if check_enabled_target(self, target):
 
                     # Insert the range in the parsed pool entry

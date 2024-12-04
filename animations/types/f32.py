@@ -2,17 +2,21 @@
 
 # f32.py
 # Particle F32 animation definitions
-# TODO remove target for texture rotation since it only has one axis
 
 from enum import IntFlag
 from typing import Any
 from common.field import *
 from animations.tables import *
 from animations.flags import *
+from emitter.flags import EmitterShape
 
 ###########
 # Helpers #
 ###########
+
+def get_emitter(structure: Structure):
+    from effect.effect import Effect
+    return structure.get_parent(Effect).emitter
 
 def get_anim_header(structure: Structure):
     from animations.header import AnimationHeader
@@ -26,6 +30,24 @@ def get_key_type(structure: Structure) -> KeyType:
 
 def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
     return (get_anim_header(structure).kind_enable & target) != 0
+
+def has_param1_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param1)
+
+def has_param2_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param2)
+
+def has_param3_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param3)
+
+def has_param4_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param4)
+
+def has_param5_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param5)
+
+def has_param6_target(self: Structure, _) -> bool:
+    return check_enabled_target(self, AnimationF32ParamTargets.Param6)
 
 ###############
 # Key Formats #
@@ -60,9 +82,9 @@ class AnimationF32Key(KeyFrameBase):
 class AnimationF32Ranges(Structure):
     values = ListField(f32(), lambda self: 2 * get_param_count(self))
 
-##################
-# Parsed Formats #
-##################
+########################
+# Parsed Frame Formats #
+########################
 
 class AnimationF32Target(Structure):
     def has_value(self, _) -> bool:
@@ -76,45 +98,181 @@ class AnimationF32Target(Structure):
     range = ListField(f32(), 2, cond=has_range)
 
 
+class AnimationF32SingleTargetFrame(Structure):
+    def has_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
+
+    x = StructField(AnimationF32Target, True, cond=has_target)
+
+
+class AnimationF32VectorFrame(Structure):
+    def has_x_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
+
+    def has_y_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.Y)
+
+    def has_z_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.Z)
+
+    x = StructField(AnimationF32Target, cond=has_x_target)
+    y = StructField(AnimationF32Target, cond=has_y_target)
+    z = StructField(AnimationF32Target, cond=has_z_target)
+
+
+class AnimationF32DiscParamsFrame(Structure):
+    x_size = StructField(AnimationF32Target, cond=has_param1_target)
+    inner_radius = StructField(AnimationF32Target, cond=has_param2_target)
+    angle_start = StructField(AnimationF32Target, cond=has_param3_target)
+    angle_end = StructField(AnimationF32Target, cond=has_param4_target)
+    z_size = StructField(AnimationF32Target, cond=has_param5_target)
+
+
+class AnimationF32LineParamsFrame(Structure):
+    length = StructField(AnimationF32Target, cond=has_param1_target)
+    x_rot = StructField(AnimationF32Target, cond=has_param2_target)
+    y_rot = StructField(AnimationF32Target, cond=has_param3_target)
+    z_rot = StructField(AnimationF32Target, cond=has_param4_target)
+
+
+class AnimationF32CubeParamsFrame(Structure):
+    x_size = StructField(AnimationF32Target, cond=has_param1_target)
+    y_size = StructField(AnimationF32Target, cond=has_param2_target)
+    z_size = StructField(AnimationF32Target, cond=has_param3_target)
+    inner_radius = StructField(AnimationF32Target, cond=has_param4_target)
+
+
+class AnimationF32CylindereSphereTorusParamsFrame(Structure):
+    x_size = StructField(AnimationF32Target, cond=has_param1_target)
+    inner_radius = StructField(AnimationF32Target, cond=has_param2_target)
+    angle_start = StructField(AnimationF32Target, cond=has_param3_target)
+    angle_end = StructField(AnimationF32Target, cond=has_param4_target)
+    y_size = StructField(AnimationF32Target, cond=has_param5_target)
+    z_size = StructField(AnimationF32Target, cond=has_param6_target)
+
+
 class AnimationF32Frame(KeyFrameBase):
     def has_random_seed(self, _) -> bool:
         return self.value_type == KeyType.Random
 
-    def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.X)
+    def get_frame_data(self) -> Field:
+        single_target_anims = [AnimTargetF32.Texture1Rotation.name, AnimTargetF32.Texture2Rotation.name,
+                            AnimTargetF32.TextureIndRotation.name, AnimTargetEmitterF32.EmitterEmissionRatio.name,
+                            AnimTargetEmitterF32.EmitterSpeedOrig.name, AnimTargetEmitterF32.EmitterSpeedYAxis.name,
+                            AnimTargetEmitterF32.EmitterSpeedRandom.name, AnimTargetEmitterF32.EmitterSpeedNormal.name,
+                            AnimTargetEmitterF32.EmitterSpeedSpecDir]
 
-    def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Y)
+        target = get_anim_header(self).target
+        if target in single_target_anims:
+            return StructField(AnimationF32SingleTargetFrame, True)
+        elif target != AnimTargetEmitterF32.EmitterParam.name:
+            return StructField(AnimationF32VectorFrame)
 
-    def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Z)
+        shape = get_emitter(self).emitter_flags.shape
+        if shape == EmitterShape.Disc:
+            return StructField(AnimationF32DiscParamsFrame)
+        elif shape == EmitterShape.Line:
+            return StructField(AnimationF32LineParamsFrame)
+        elif shape == EmitterShape.Cube:
+            return StructField(AnimationF32CubeParamsFrame)
+        elif shape != EmitterShape.Point:
+            return StructField(AnimationF32CylindereSphereTorusParamsFrame)
+        else:
+            raise ValueError('Emitter parameter animations are not supported by Point shaped emitters!')
 
     random_seed = u16(cond=has_random_seed)
-    x = StructField(AnimationF32Target, cond=has_x_target)
-    y = StructField(AnimationF32Target, cond=has_y_target)
-    z = StructField(AnimationF32Target, cond=has_z_target)
+    targets = UnionField(get_frame_data)
+
+####################################
+# Parsed Random Pool Entry Formats #
+####################################
+
+class AnimationF32RandomPoolSingleTarget(Structure):
+    def has_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
+
+    x = ListField(f32(), 2, cond=has_target)
+
+
+class AnimationF32RandomPoolVectorTarget(Structure):
+    def has_x_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.X)
+
+    def has_y_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.Y)
+
+    def has_z_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationF32VectorTargets.Z)
+
+    x = ListField(f32(), 2, cond=has_x_target)
+    y = ListField(f32(), 2, cond=has_y_target)
+    z = ListField(f32(), 2, cond=has_z_target)
+
+
+class AnimationF32RandomPoolDiscParamsTarget(Structure):
+    x_size = ListField(f32(), 2, cond=has_param1_target)
+    inner_radius = ListField(f32(), 2, cond=has_param2_target)
+    angle_start = ListField(f32(), 2, cond=has_param3_target)
+    angle_end = ListField(f32(), 2, cond=has_param4_target)
+    z_size = ListField(f32(), 2, cond=has_param5_target)
+
+
+class AnimationF32RandomPoolLineParamsTarget(Structure):
+    length = ListField(f32(), 2, cond=has_param1_target)
+    x_rot = ListField(f32(), 2, cond=has_param2_target)
+    y_rot = ListField(f32(), 2, cond=has_param3_target)
+    z_rot = ListField(f32(), 2, cond=has_param4_target)
+
+
+class AnimationF32RandomPoolCubeParamsTarget(Structure):
+    x_size = ListField(f32(), 2, cond=has_param1_target)
+    y_size = ListField(f32(), 2, cond=has_param2_target)
+    z_size = ListField(f32(), 2, cond=has_param3_target)
+    inner_radius = ListField(f32(), 2, cond=has_param4_target)
+
+
+class AnimationF32RandomPoolCylindereSphereTorusParamsTarget(Structure):
+    x_size = ListField(f32(), 2, cond=has_param1_target)
+    inner_radius = ListField(f32(), 2, cond=has_param2_target)
+    angle_start = ListField(f32(), 2, cond=has_param3_target)
+    angle_end = ListField(f32(), 2, cond=has_param4_target)
+    y_size = ListField(f32(), 2, cond=has_param5_target)
+    z_size = ListField(f32(), 2, cond=has_param6_target)
 
 
 class AnimationF32RandomPoolEntry(Structure):
-    def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.X)
+    def get_entry_data(self) -> Field:
+        single_target_anims = [AnimTargetF32.Texture1Rotation.name, AnimTargetF32.Texture2Rotation.name,
+                            AnimTargetF32.TextureIndRotation.name, AnimTargetEmitterF32.EmitterEmissionRatio.name,
+                            AnimTargetEmitterF32.EmitterSpeedOrig.name, AnimTargetEmitterF32.EmitterSpeedYAxis.name,
+                            AnimTargetEmitterF32.EmitterSpeedRandom.name, AnimTargetEmitterF32.EmitterSpeedNormal.name,
+                            AnimTargetEmitterF32.EmitterSpeedSpecDir]
 
-    def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Y)
+        target = get_anim_header(self).target
+        if target in single_target_anims:
+            return StructField(AnimationF32RandomPoolSingleTarget, True)
+        elif target != AnimTargetEmitterF32.EmitterParam.name:
+            return StructField(AnimationF32RandomPoolVectorTarget)
 
-    def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32Targets.Z)
+        shape = get_emitter(self).emitter_flags.shape
+        if shape == EmitterShape.Disc:
+            return StructField(AnimationF32RandomPoolDiscParamsTarget)
+        elif shape == EmitterShape.Line:
+            return StructField(AnimationF32RandomPoolLineParamsTarget)
+        elif shape == EmitterShape.Cube:
+            return StructField(AnimationF32RandomPoolCubeParamsTarget)
+        elif shape != EmitterShape.Point:
+            return StructField(AnimationF32RandomPoolCylindereSphereTorusParamsTarget)
+        else:
+            raise ValueError('Emitter parameter animations are not supported by Point shaped emitters!')
 
-    x = StructField(AnimationF32Target, cond=has_x_target)
-    y = StructField(AnimationF32Target, cond=has_y_target)
-    z = StructField(AnimationF32Target, cond=has_z_target)
+    targets = UnionField(get_entry_data)
 
 ###############
 # Main Format #
 ###############
 
 class AnimationF32(Structure):
-
     def get_key_count(self) -> int:
         return self.frame_table.entry_count
 
@@ -130,6 +288,12 @@ class AnimationF32(Structure):
     def get_random_count(self) -> int:
         return self.random_table.entry_count
 
+    def get_targets(self) -> IntFlag:
+        if get_anim_header(self).target == AnimTargetEmitterF32.EmitterParam.name:
+            return AnimationF32ParamTargets
+        else:
+            return AnimationF32VectorTargets
+
     frame_table = StructField(AnimDataTable, cond=skip_json)
     frames = ListField(StructField(AnimationF32Key), get_key_count, cond=skip_json)
     key_frames = ListField(StructField(AnimationF32Frame), cond=skip_binary) # Parsed version
@@ -143,6 +307,12 @@ class AnimationF32(Structure):
 
     def to_json(self) -> dict[str, Any]:
 
+        # Get the targets and the parameter names that might be necessary
+        targets = self.get_targets()
+        emitter = get_emitter(self)
+        emitter_shape = emitter.emitter_flags.shape
+        param_names = list(emitter.shape_params._fields_.keys()) if emitter_shape != EmitterShape.Point else []
+
         # Parse each frame
         for frame in self.frames:
 
@@ -155,14 +325,23 @@ class AnimationF32(Structure):
             if frame.value_type == KeyType.Random:
                 parsed_frame.random_seed = frame.key_data.idx
 
+            # Create the targets field by scanning the union
+            frame_data = AnimationF32Frame.targets.detect_field(parsed_frame).struct_type(parsed_frame)
+            parsed_frame.targets = frame_data
+
             # Parse the enabled targets
             i = 0
-            for target in AnimationF32Targets:
+            for target in targets:
                 if check_enabled_target(frame, target):
 
-                    # Create the target and insert it into the data
-                    target_data = AnimationF32Target(parsed_frame)
-                    setattr(parsed_frame, target.name.lower(), target_data)
+                    # Create the target
+                    target_data = AnimationF32Target(frame_data)
+                    attr_name = target.name.lower()
+                    if isinstance(target, AnimationF32ParamTargets):
+                        attr_name = param_names[target.value.bit_length() - 1]
+
+                    # Insert the target into the data
+                    setattr(frame_data, attr_name, target_data)
 
                     # Get the interpolation and value/range
                     target_data.interpolation = frame.curve_types[target.value.bit_length() - 1]
@@ -184,14 +363,21 @@ class AnimationF32(Structure):
 
             # Create parsed entry
             pool_entry = AnimationF32RandomPoolEntry(self)
+            entry_data = AnimationF32RandomPoolEntry.targets.detect_field(parsed_frame).struct_type(parsed_frame)
+            pool_entry.targets = entry_data
 
             # Check the enabled targets
             i = 0
-            for target in AnimationF32Targets:
+            for target in targets:
                 if check_enabled_target(self, target):
 
+                    # Get the target name
+                    attr_name = target.name.lower()
+                    if isinstance(target, AnimationF32ParamTargets):
+                        attr_name = param_names[target.value.bit_length() - 1]
+
                     # Insert the range in the parsed pool entry
-                    setattr(pool_entry, target.name.lower(), entry.values[i:i+2])
+                    setattr(pool_entry, attr_name, entry.values[i:i+2])
                     i += 2
 
             # Add the new entry
