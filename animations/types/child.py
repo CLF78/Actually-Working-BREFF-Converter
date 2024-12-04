@@ -71,13 +71,13 @@ class AnimationChild(Structure):
         return not is_json and get_anim_header(self).random_table_size != 0
 
     def has_random_pool(self, is_json: bool) -> bool:
-        return is_json or get_anim_header(self).random_table_size != 0
+        return is_json or self.has_random_table(is_json)
 
     def get_random_count(self) -> int:
         return self.random_table.entry_count
 
     frame_table = StructField(AnimDataTable, cond=skip_json)
     frames = ListField(StructField(AnimationChildKeyFrame), get_key_count)
-    name_table = StructField(NameTable, alignment=4, cond=skip_json)
     random_table = StructField(AnimDataTable, cond=has_random_table)
     random_pool = ListField(StructField(AnimationChildParam), get_random_count, cond=has_random_pool)
+    name_table = StructField(NameTable, alignment=4, cond=skip_json)
