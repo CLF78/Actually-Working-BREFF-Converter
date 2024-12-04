@@ -54,6 +54,7 @@ class BillboardAhead(CEnum):
     EmitterSpecDir = auto() # Emitter specified direction
     Particle = auto()       # Difference in location from the previous particle
     ParticleBoth = auto()   # Difference in position with both neighboring particles
+    Speed5 = auto()         # Invalid value seen somewhere, same behaviour as Speed
 
 
 class RotateAxis(CEnum):

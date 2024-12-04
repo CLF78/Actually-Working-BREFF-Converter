@@ -16,6 +16,7 @@ class ReverseMode(CEnum):
 
 
 class ParticleTexture(Structure):
+    name = StructField(NameString, unroll=True)
     scale = StructField(VEC2)
     rotation = f32()
     translation = StructField(VEC2)
@@ -24,7 +25,6 @@ class ParticleTexture(Structure):
     reverse_mode = EnumField(ReverseMode)
     rotation_offset_random = u32()
     rotation_offset = f32()
-    name = StructField(NameString, unroll=True)
 
 
 class ParticleTextures(Structure):
