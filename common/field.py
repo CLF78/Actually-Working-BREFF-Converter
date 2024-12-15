@@ -1,7 +1,7 @@
 import struct
 from enum import IntEnum, IntFlag
 from typing import Any, Callable, cast, Callable, Optional, Type, TypeVar
-from common.common import align, pad, snake_to_camel
+from common.common import align, pad, snake_to_camel, pascal_to_camel, camel_to_pascal
 
 # Base definitions
 S = TypeVar('S', bound='Structure')
@@ -232,7 +232,7 @@ class Structure(metaclass=StructureMeta):
             json_value = field.to_json(value)
 
             # Insert it directly if unrolled
-            if getattr(field, 'unroll', False):
+            if isinstance(field, StructField) and field.unroll:
                 result.update(json_value)
             else:
                 result[snake_to_camel(name)] = json_value
@@ -399,13 +399,13 @@ class FlagEnumField(EnumField):
         result = self.enum_type(self.default)
         for flag_name, is_set in value.items():
             if is_set:
-                result |= self.enum_type[flag_name]
+                result |= self.enum_type[camel_to_pascal(flag_name)]
         return result
 
     def to_json(self, value: IntFlag) -> dict[str, bool]:
         result = {}
         for flag in self.enum_type:
-            result[flag.name] = bool(flag & value)
+            result[pascal_to_camel(flag.name)] = bool(flag & value)
         return result
 
 

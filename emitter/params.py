@@ -27,7 +27,7 @@ class CubeParams(Structure):
     inner_radius = f32('f8x')
 
 
-class CylindereSphereTorusParams(Structure):
+class CylinderSphereTorusParams(Structure):
     x_size = f32()
     inner_radius = f32()
     angle_start = f32()

@@ -134,7 +134,7 @@ class StripeOptions(Structure):
         return super().to_json()
 
     def to_bytes(self) -> bytes:
-        self.type2 = int(self.connect) | int(self.initial_prev_axis) | int(self.texmap_type)
+        self.type2 = self.connect.value | self.initial_prev_axis.value | self.texmap_type.value
         return super().to_bytes()
 
 
@@ -157,5 +157,5 @@ class SmoothStripeOptions(Structure):
         return super().to_json()
 
     def to_bytes(self) -> bytes:
-        self.type2 = int(self.connect) | int(self.initial_prev_axis) | int(self.texmap_type)
+        self.type2 = self.connect.value | self.initial_prev_axis.value | self.texmap_type.value
         return super().to_bytes()

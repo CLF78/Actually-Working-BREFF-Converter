@@ -3,65 +3,26 @@
 # f32.py
 # Particle F32 animation definitions
 
-from enum import IntFlag
 from typing import Any
+from common.common import pascal_to_snake
 from common.field import *
+from animations.common import *
 from animations.tables import *
 from animations.flags import *
-from emitter.flags import EmitterShape
-
-###########
-# Helpers #
-###########
-
-def get_emitter(structure: Structure):
-    from effect.effect import Effect
-    return structure.get_parent(Effect).emitter
-
-def get_anim_header(structure: Structure):
-    from animations.header import AnimationHeader
-    return structure.get_parent(AnimationHeader)
-
-def get_param_count(structure: Structure) -> int:
-    return get_anim_header(structure).get_param_count()
-
-def get_key_type(structure: Structure) -> KeyType:
-    return structure.get_parent(KeyFrameBase).value_type
-
-def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
-    return (get_anim_header(structure).kind_enable & target) != 0
-
-def has_param1_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param1)
-
-def has_param2_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param2)
-
-def has_param3_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param3)
-
-def has_param4_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param4)
-
-def has_param5_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param5)
-
-def has_param6_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationF32ParamTargets.Param6)
 
 ###############
 # Key Formats #
 ###############
 
 class AnimationF32KeyFixed(Structure):
-    values = ListField(f32(), get_param_count)
+    values = ListField(f32(), get_sub_target_count)
 
 class AnimationF32KeyRangeRandom(Structure):
     def get_padding(self) -> int:
-        param_size = get_anim_header(self).get_param_count() * 4
+        param_size = get_sub_target_count(self) * 4
         return 0xC + param_size - 0xE
 
-    idx = u16()
+    idx = u16() # For random keyframes, this is just the index into the key frame list
     padd = ListField(u8(), get_padding, cond=skip_json)
 
 
@@ -80,7 +41,7 @@ class AnimationF32Key(KeyFrameBase):
 ################
 
 class AnimationF32Ranges(Structure):
-    values = ListField(f32(), lambda self: 2 * get_param_count(self))
+    values = ListField(f32(), lambda self: 2 * get_sub_target_count(self))
 
 ########################
 # Parsed Frame Formats #
@@ -98,175 +59,309 @@ class AnimationF32Target(Structure):
     range = ListField(f32(), 2, cond=has_range)
 
 
-class AnimationF32SingleTargetFrame(Structure):
-    def has_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.X)
-
-    x = StructField(AnimationF32Target, True, cond=has_target)
-
-
-class AnimationF32VectorFrame(Structure):
+class AnimationF32Frame(KeyFrameBase):
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.X)
+        return check_enabled_target(self, AnimationVec2Targets.X) or \
+               check_enabled_target(self, AnimationVec3Targets.X)
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.Y)
+        return check_enabled_target(self, AnimationVec2Targets.Y) or \
+               check_enabled_target(self, AnimationVec3Targets.Y)
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.Z)
+        return check_enabled_target(self, AnimationVec3Targets.Z)
+
+    def has_x_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.XSize) or \
+               check_enabled_target(self, AnimationCubeParamTargets.XSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.XSize)
+
+    def has_y_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationCubeParamTargets.YSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.YSize)
+
+    def has_z_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.ZSize) or \
+               check_enabled_target(self, AnimationCubeParamTargets.ZSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.ZSize)
+
+    def has_x_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.XRot)
+
+    def has_y_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.YRot)
+
+    def has_z_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.ZRot)
+
+    def has_inner_radius_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.InnerRadius) or \
+               check_enabled_target(self, AnimationCubeParamTargets.InnerRadius) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.InnerRadius)
+
+    def has_angle_start_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.AngleStart) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.AngleStart)
+
+    def has_angle_end_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.AngleEnd) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.AngleEnd)
+
+    def has_length_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.Length)
+
+    def has_power_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldGravityTargets.Power) or \
+               check_enabled_target(self, AnimationFieldRandomTargets.Power) or \
+               check_enabled_target(self, AnimationFieldMagnetTargets.Power) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.Power)
+
+    def has_diffusion_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldRandomTargets.Diffusion)
+
+    def has_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldSpinTargets.Speed)
+
+    def has_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.Distance)
+
+    def has_ref_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldNewtonTargets.RefDistance)
+
+    def has_inner_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.InnerSpeed)
+
+    def has_outer_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.OuterSpeed)
+
+    def has_x_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.XTrans)
+
+    def has_y_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.YTrans)
+
+    def has_z_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.ZTrans)
+
+    def has_power_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.PowerSpecDir)
+
+    def has_diffusion_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.DiffusionSpecDir)
+
+    def has_vel_spec_dir_x_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirX)
+
+    def has_vel_spec_dir_y_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirY)
+
+    def has_vel_spec_dir_z_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirZ)
+
+    t = StructField(AnimationF32Target, True, cond=has_single_target)
 
     x = StructField(AnimationF32Target, cond=has_x_target)
     y = StructField(AnimationF32Target, cond=has_y_target)
     z = StructField(AnimationF32Target, cond=has_z_target)
 
+    x_size = StructField(AnimationF32Target, cond=has_x_size_target)
+    y_size = StructField(AnimationF32Target, cond=has_y_size_target)
+    z_size = StructField(AnimationF32Target, cond=has_z_size_target)
 
-class AnimationF32DiscParamsFrame(Structure):
-    x_size = StructField(AnimationF32Target, cond=has_param1_target)
-    inner_radius = StructField(AnimationF32Target, cond=has_param2_target)
-    angle_start = StructField(AnimationF32Target, cond=has_param3_target)
-    angle_end = StructField(AnimationF32Target, cond=has_param4_target)
-    z_size = StructField(AnimationF32Target, cond=has_param5_target)
+    x_rot = StructField(AnimationF32Target, cond=has_x_rot_target)
+    y_rot = StructField(AnimationF32Target, cond=has_y_rot_target)
+    z_rot = StructField(AnimationF32Target, cond=has_z_rot_target)
 
+    inner_radius = StructField(AnimationF32Target, cond=has_inner_radius_target)
+    angle_start = StructField(AnimationF32Target, cond=has_angle_start_target)
+    angle_end = StructField(AnimationF32Target, cond=has_angle_end_target)
 
-class AnimationF32LineParamsFrame(Structure):
-    length = StructField(AnimationF32Target, cond=has_param1_target)
-    x_rot = StructField(AnimationF32Target, cond=has_param2_target)
-    y_rot = StructField(AnimationF32Target, cond=has_param3_target)
-    z_rot = StructField(AnimationF32Target, cond=has_param4_target)
+    length = StructField(AnimationF32Target, cond=has_length_target)
 
+    power = StructField(AnimationF32Target, cond=has_power_target)
+    diffusion = StructField(AnimationF32Target, cond=has_diffusion_target)
+    speed = StructField(AnimationF32Target, cond=has_speed_target)
+    distance = StructField(AnimationF32Target, cond=has_distance_target)
 
-class AnimationF32CubeParamsFrame(Structure):
-    x_size = StructField(AnimationF32Target, cond=has_param1_target)
-    y_size = StructField(AnimationF32Target, cond=has_param2_target)
-    z_size = StructField(AnimationF32Target, cond=has_param3_target)
-    inner_radius = StructField(AnimationF32Target, cond=has_param4_target)
+    x_trans = StructField(AnimationF32Target, cond=has_x_trans_target)
+    y_trans = StructField(AnimationF32Target, cond=has_y_trans_target)
+    z_trans = StructField(AnimationF32Target, cond=has_z_trans_target)
 
+    ref_distance = StructField(AnimationF32Target, cond=has_ref_distance_target)
+    inner_speed = StructField(AnimationF32Target, cond=has_inner_speed_target)
+    outer_speed = StructField(AnimationF32Target, cond=has_outer_speed_target)
 
-class AnimationF32CylindereSphereTorusParamsFrame(Structure):
-    x_size = StructField(AnimationF32Target, cond=has_param1_target)
-    inner_radius = StructField(AnimationF32Target, cond=has_param2_target)
-    angle_start = StructField(AnimationF32Target, cond=has_param3_target)
-    angle_end = StructField(AnimationF32Target, cond=has_param4_target)
-    y_size = StructField(AnimationF32Target, cond=has_param5_target)
-    z_size = StructField(AnimationF32Target, cond=has_param6_target)
-
-
-class AnimationF32Frame(KeyFrameBase):
-    def has_random_seed(self, _) -> bool:
-        return self.value_type == KeyType.Random
-
-    def get_frame_data(self) -> Field:
-        single_target_anims = [AnimTargetF32.Texture1Rotation.name, AnimTargetF32.Texture2Rotation.name,
-                            AnimTargetF32.TextureIndRotation.name, AnimTargetEmitterF32.EmitterEmissionRatio.name,
-                            AnimTargetEmitterF32.EmitterSpeedOrig.name, AnimTargetEmitterF32.EmitterSpeedYAxis.name,
-                            AnimTargetEmitterF32.EmitterSpeedRandom.name, AnimTargetEmitterF32.EmitterSpeedNormal.name,
-                            AnimTargetEmitterF32.EmitterSpeedSpecDir]
-
-        target = get_anim_header(self).target
-        if target in single_target_anims:
-            return StructField(AnimationF32SingleTargetFrame, True)
-        elif target != AnimTargetEmitterF32.EmitterParam.name:
-            return StructField(AnimationF32VectorFrame)
-
-        shape = get_emitter(self).emitter_flags.shape
-        if shape == EmitterShape.Disc:
-            return StructField(AnimationF32DiscParamsFrame)
-        elif shape == EmitterShape.Line:
-            return StructField(AnimationF32LineParamsFrame)
-        elif shape == EmitterShape.Cube:
-            return StructField(AnimationF32CubeParamsFrame)
-        elif shape != EmitterShape.Point:
-            return StructField(AnimationF32CylindereSphereTorusParamsFrame)
-        else:
-            raise ValueError('Emitter parameter animations are not supported by Point shaped emitters!')
-
-    random_seed = u16(cond=has_random_seed)
-    targets = UnionField(get_frame_data)
+    power_spec_dir = StructField(AnimationF32Target, cond=has_power_spec_dir_target)
+    diffusion_spec_dir = StructField(AnimationF32Target, cond=has_diffusion_spec_dir_target)
+    vel_spec_dir_x = StructField(AnimationF32Target, cond=has_vel_spec_dir_x_target)
+    vel_spec_dir_y = StructField(AnimationF32Target, cond=has_vel_spec_dir_y_target)
+    vel_spec_dir_z = StructField(AnimationF32Target, cond=has_vel_spec_dir_z_target)
 
 ####################################
 # Parsed Random Pool Entry Formats #
 ####################################
 
-class AnimationF32RandomPoolSingleTarget(Structure):
-    def has_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.X)
-
-    x = ListField(f32(), 2, cond=has_target)
-
-
-class AnimationF32RandomPoolVectorTarget(Structure):
+class AnimationF32RandomPoolEntry(Structure):
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.X)
+        return check_enabled_target(self, AnimationVec2Targets.X) or \
+               check_enabled_target(self, AnimationVec3Targets.X)
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.Y)
+        return check_enabled_target(self, AnimationVec2Targets.Y) or \
+               check_enabled_target(self, AnimationVec3Targets.Y)
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationF32VectorTargets.Z)
+        return check_enabled_target(self, AnimationVec3Targets.Z)
+
+    def has_x_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.XSize) or \
+               check_enabled_target(self, AnimationCubeParamTargets.XSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.XSize)
+
+    def has_y_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationCubeParamTargets.YSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.YSize)
+
+    def has_z_size_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.ZSize) or \
+               check_enabled_target(self, AnimationCubeParamTargets.ZSize) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.ZSize)
+
+    def has_x_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.XRot)
+
+    def has_y_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.YRot)
+
+    def has_z_rot_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.ZRot)
+
+    def has_inner_radius_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.InnerRadius) or \
+               check_enabled_target(self, AnimationCubeParamTargets.InnerRadius) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.InnerRadius)
+
+    def has_angle_start_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.AngleStart) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.AngleStart)
+
+    def has_angle_end_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationDiscParamTargets.AngleEnd) or \
+               check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.AngleEnd)
+
+    def has_length_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationLineParamTargets.Length)
+
+    def has_power_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldGravityTargets.Power) or \
+               check_enabled_target(self, AnimationFieldRandomTargets.Power) or \
+               check_enabled_target(self, AnimationFieldMagnetTargets.Power) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.Power)
+
+    def has_diffusion_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldRandomTargets.Diffusion)
+
+    def has_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldSpinTargets.Speed)
+
+    def has_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.Distance)
+
+    def has_ref_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldNewtonTargets.RefDistance)
+
+    def has_inner_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.InnerSpeed)
+
+    def has_outer_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.OuterSpeed)
+
+    def has_x_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.XTrans)
+
+    def has_y_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.YTrans)
+
+    def has_z_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.ZTrans)
+
+    def has_power_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.PowerSpecDir)
+
+    def has_diffusion_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.DiffusionSpecDir)
+
+    def has_vel_spec_dir_x_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirX)
+
+    def has_vel_spec_dir_y_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirY)
+
+    def has_vel_spec_dir_z_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirZ)
+
+    t = ListField(f32(), 2, cond=has_single_target)
 
     x = ListField(f32(), 2, cond=has_x_target)
     y = ListField(f32(), 2, cond=has_y_target)
     z = ListField(f32(), 2, cond=has_z_target)
 
+    x_size = ListField(f32(), 2, cond=has_x_size_target)
+    y_size = ListField(f32(), 2, cond=has_y_size_target)
+    z_size = ListField(f32(), 2, cond=has_z_size_target)
 
-class AnimationF32RandomPoolDiscParamsTarget(Structure):
-    x_size = ListField(f32(), 2, cond=has_param1_target)
-    inner_radius = ListField(f32(), 2, cond=has_param2_target)
-    angle_start = ListField(f32(), 2, cond=has_param3_target)
-    angle_end = ListField(f32(), 2, cond=has_param4_target)
-    z_size = ListField(f32(), 2, cond=has_param5_target)
+    x_rot = ListField(f32(), 2, cond=has_x_rot_target)
+    y_rot = ListField(f32(), 2, cond=has_y_rot_target)
+    z_rot = ListField(f32(), 2, cond=has_z_rot_target)
 
+    inner_radius = ListField(f32(), 2, cond=has_inner_radius_target)
+    angle_start = ListField(f32(), 2, cond=has_angle_start_target)
+    angle_end = ListField(f32(), 2, cond=has_angle_end_target)
 
-class AnimationF32RandomPoolLineParamsTarget(Structure):
-    length = ListField(f32(), 2, cond=has_param1_target)
-    x_rot = ListField(f32(), 2, cond=has_param2_target)
-    y_rot = ListField(f32(), 2, cond=has_param3_target)
-    z_rot = ListField(f32(), 2, cond=has_param4_target)
+    length = ListField(f32(), 2, cond=has_length_target)
 
+    power = ListField(f32(), 2, cond=has_power_target)
+    diffusion = ListField(f32(), 2, cond=has_diffusion_target)
+    speed = ListField(f32(), 2, cond=has_speed_target)
+    distance = ListField(f32(), 2, cond=has_distance_target)
 
-class AnimationF32RandomPoolCubeParamsTarget(Structure):
-    x_size = ListField(f32(), 2, cond=has_param1_target)
-    y_size = ListField(f32(), 2, cond=has_param2_target)
-    z_size = ListField(f32(), 2, cond=has_param3_target)
-    inner_radius = ListField(f32(), 2, cond=has_param4_target)
+    x_trans = ListField(f32(), 2, cond=has_x_trans_target)
+    y_trans = ListField(f32(), 2, cond=has_y_trans_target)
+    z_trans = ListField(f32(), 2, cond=has_z_trans_target)
 
+    ref_distance = ListField(f32(), 2, cond=has_ref_distance_target)
+    inner_speed = ListField(f32(), 2, cond=has_inner_speed_target)
+    outer_speed = ListField(f32(), 2, cond=has_outer_speed_target)
 
-class AnimationF32RandomPoolCylindereSphereTorusParamsTarget(Structure):
-    x_size = ListField(f32(), 2, cond=has_param1_target)
-    inner_radius = ListField(f32(), 2, cond=has_param2_target)
-    angle_start = ListField(f32(), 2, cond=has_param3_target)
-    angle_end = ListField(f32(), 2, cond=has_param4_target)
-    y_size = ListField(f32(), 2, cond=has_param5_target)
-    z_size = ListField(f32(), 2, cond=has_param6_target)
-
-
-class AnimationF32RandomPoolEntry(Structure):
-    def get_entry_data(self) -> Field:
-        single_target_anims = [AnimTargetF32.Texture1Rotation.name, AnimTargetF32.Texture2Rotation.name,
-                            AnimTargetF32.TextureIndRotation.name, AnimTargetEmitterF32.EmitterEmissionRatio.name,
-                            AnimTargetEmitterF32.EmitterSpeedOrig.name, AnimTargetEmitterF32.EmitterSpeedYAxis.name,
-                            AnimTargetEmitterF32.EmitterSpeedRandom.name, AnimTargetEmitterF32.EmitterSpeedNormal.name,
-                            AnimTargetEmitterF32.EmitterSpeedSpecDir]
-
-        target = get_anim_header(self).target
-        if target in single_target_anims:
-            return StructField(AnimationF32RandomPoolSingleTarget, True)
-        elif target != AnimTargetEmitterF32.EmitterParam.name:
-            return StructField(AnimationF32RandomPoolVectorTarget)
-
-        shape = get_emitter(self).emitter_flags.shape
-        if shape == EmitterShape.Disc:
-            return StructField(AnimationF32RandomPoolDiscParamsTarget)
-        elif shape == EmitterShape.Line:
-            return StructField(AnimationF32RandomPoolLineParamsTarget)
-        elif shape == EmitterShape.Cube:
-            return StructField(AnimationF32RandomPoolCubeParamsTarget)
-        elif shape != EmitterShape.Point:
-            return StructField(AnimationF32RandomPoolCylindereSphereTorusParamsTarget)
-        else:
-            raise ValueError('Emitter parameter animations are not supported by Point shaped emitters!')
-
-    targets = UnionField(get_entry_data)
+    power_spec_dir = ListField(f32(), 2, cond=has_power_spec_dir_target)
+    diffusion_spec_dir = ListField(f32(), 2, cond=has_diffusion_spec_dir_target)
+    vel_spec_dir_x = ListField(f32(), 2, cond=has_vel_spec_dir_x_target)
+    vel_spec_dir_y = ListField(f32(), 2, cond=has_vel_spec_dir_y_target)
+    vel_spec_dir_z = ListField(f32(), 2, cond=has_vel_spec_dir_z_target)
 
 ###############
 # Main Format #
@@ -288,12 +383,6 @@ class AnimationF32(Structure):
     def get_random_count(self) -> int:
         return self.random_table.entry_count
 
-    def get_targets(self) -> IntFlag:
-        if get_anim_header(self).target == AnimTargetEmitterF32.EmitterParam.name:
-            return AnimationF32ParamTargets
-        else:
-            return AnimationF32VectorTargets
-
     frame_table = StructField(AnimDataTable, cond=skip_json)
     frames = ListField(StructField(AnimationF32Key), get_key_count, cond=skip_json)
     key_frames = ListField(StructField(AnimationF32Frame), cond=skip_binary) # Parsed version
@@ -308,10 +397,7 @@ class AnimationF32(Structure):
     def to_json(self) -> dict[str, Any]:
 
         # Get the targets and the parameter names that might be necessary
-        targets = self.get_targets()
-        emitter = get_emitter(self)
-        emitter_shape = emitter.emitter_flags.shape
-        param_names = list(emitter.shape_params._fields_.keys()) if emitter_shape != EmitterShape.Point else []
+        sub_targets = get_anim_header(self).sub_targets
 
         # Parse each frame
         for frame in self.frames:
@@ -321,39 +407,21 @@ class AnimationF32(Structure):
             parsed_frame.frame = frame.frame
             parsed_frame.value_type = frame.value_type
 
-            # Copy the random seed if necessary
-            if frame.value_type == KeyType.Random:
-                parsed_frame.random_seed = frame.key_data.idx
-
-            # Create the targets field by scanning the union
-            frame_data = AnimationF32Frame.targets.detect_field(parsed_frame).struct_type(parsed_frame)
-            parsed_frame.targets = frame_data
-
             # Parse the enabled targets
-            i = 0
-            for target in targets:
-                if check_enabled_target(frame, target):
+            for i, target_name, target_value in get_enabled_targets(sub_targets):
 
-                    # Create the target
-                    target_data = AnimationF32Target(frame_data)
-                    attr_name = target.name.lower()
-                    if isinstance(target, AnimationF32ParamTargets):
-                        attr_name = param_names[target.value.bit_length() - 1]
+                # Create the target
+                target_data = AnimationF32Target(parsed_frame)
+                setattr(parsed_frame, pascal_to_snake(target_name), target_data)
 
-                    # Insert the target into the data
-                    setattr(frame_data, attr_name, target_data)
-
-                    # Get the interpolation and value/range
-                    target_data.interpolation = frame.curve_types[target.value.bit_length() - 1]
-                    if parsed_frame.value_type == KeyType.Fixed:
-                        target_data.value = frame.key_data.values[i]
-                    elif parsed_frame.value_type == KeyType.Range:
-                        range_idx = frame.key_data.idx
-                        range_values: AnimationF32Ranges = self.range_values[range_idx]
-                        target_data.range = range_values.values[i*2 : i*2 + 2]
-
-                    # Update the counter
-                    i += 1
+                # Get the interpolation and value/range
+                target_data.interpolation = frame.curve_types[target_value.bit_length() - 1]
+                if parsed_frame.value_type == KeyType.Fixed:
+                    target_data.value = frame.key_data.values[i]
+                elif parsed_frame.value_type == KeyType.Range:
+                    range_idx = frame.key_data.idx
+                    range_values: AnimationF32Ranges = self.range_values[range_idx]
+                    target_data.range = range_values.values[i*2 : i*2 + 2]
 
             # Add the parsed frame to the list
             self.key_frames.append(parsed_frame)
@@ -363,22 +431,8 @@ class AnimationF32(Structure):
 
             # Create parsed entry
             pool_entry = AnimationF32RandomPoolEntry(self)
-            entry_data = AnimationF32RandomPoolEntry.targets.detect_field(parsed_frame).struct_type(parsed_frame)
-            pool_entry.targets = entry_data
-
-            # Check the enabled targets
-            i = 0
-            for target in targets:
-                if check_enabled_target(self, target):
-
-                    # Get the target name
-                    attr_name = target.name.lower()
-                    if isinstance(target, AnimationF32ParamTargets):
-                        attr_name = param_names[target.value.bit_length() - 1]
-
-                    # Insert the range in the parsed pool entry
-                    setattr(pool_entry, attr_name, entry.values[i:i+2])
-                    i += 2
+            for i, target_name, target_value in get_enabled_targets(sub_targets):
+                setattr(pool_entry, pascal_to_snake(target_name), entry.values[i*2 : i*2 + 2])
 
             # Add the new entry
             self.random_pool.append(pool_entry)

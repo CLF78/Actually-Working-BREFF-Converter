@@ -3,42 +3,27 @@
 # u8.py
 # Particle U8 animation definitions
 
-from enum import IntFlag
 from typing import Any
+from common.common import pascal_to_snake
 from common.field import *
-from animations.tables import *
+from animations.common import *
 from animations.flags import *
-
-###########
-# Helpers #
-###########
-
-def get_anim_header(structure: Structure):
-    from animations.header import AnimationHeader
-    return structure.get_parent(AnimationHeader)
-
-def get_param_count(structure: Structure) -> int:
-    return get_anim_header(structure).get_param_count()
-
-def get_key_type(structure: Structure) -> KeyType:
-    return structure.get_parent(KeyFrameBase).value_type
-
-def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
-    return (get_anim_header(structure).kind_enable & target) != 0
+from animations.tables import *
 
 ###############
 # Key Formats #
 ###############
 
 class AnimationU8KeyFixed(Structure):
-    values = ListField(u8(), get_param_count, alignment=2)
+    values = ListField(u8(), get_sub_target_count, alignment=2)
+
 
 class AnimationU8KeyRangeRandom(Structure):
     def get_padding(self) -> int:
-        param_count = get_anim_header(self).get_param_count()
+        param_count = get_sub_target_count(self)
         return align(0xC + param_count, 2) - 0xE
 
-    idx = u16()
+    idx = u16() # For random keyframes, this is just the index into the key frame list
     padd = ListField(u8(), get_padding, cond=skip_json)
 
 
@@ -57,7 +42,7 @@ class AnimationU8Key(KeyFrameBase):
 ################
 
 class AnimationU8Ranges(Structure):
-    values = ListField(u8(), lambda self: 2 * get_param_count(self))
+    values = ListField(u8(), lambda self: 2 * get_sub_target_count(self))
 
 ##################
 # Parsed Formats #
@@ -75,76 +60,36 @@ class AnimationU8Target(Structure):
     range = ListField(u8(), 2, cond=has_range)
 
 
-class AnimationU8ColorTarget(Structure):
+class AnimationU8Frame(KeyFrameBase):
     def has_r_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Red)
+        return check_enabled_target(self, AnimationColorTargets.R)
 
     def has_g_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Green)
+        return check_enabled_target(self, AnimationColorTargets.G)
 
     def has_b_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Blue)
+        return check_enabled_target(self, AnimationColorTargets.B)
 
     r = StructField(AnimationU8Target, cond=has_r_target)
     g = StructField(AnimationU8Target, cond=has_g_target)
     b = StructField(AnimationU8Target, cond=has_b_target)
+    t = StructField(AnimationU8Target, True, cond=has_single_target)
 
 
-class AnimationU8AlphaTarget(Structure):
-    def has_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8AlphaTargets.Alpha)
-
-    a = StructField(AnimationU8Target, unroll=True, cond=has_target)
-
-
-class AnimationU8Frame(KeyFrameBase):
-    def has_random_seed(self, _) -> bool:
-        return self.value_type == KeyType.Random
-
-    def get_target_format(self) -> Field:
-        match get_anim_header(self).target:
-            case AnimTargetU8.Color1Primary.name | AnimTargetU8.Color2Primary.name | \
-                AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
-                return StructField(AnimationU8ColorTarget)
-            case _:
-                return StructField(AnimationU8AlphaTarget, unroll=True)
-
-    random_seed = u16(cond=has_random_seed)
-    targets = UnionField(get_target_format)
-
-
-class AnimationU8RandomPoolColorEntry(Structure):
+class AnimationU8RandomPoolEntry(Structure):
     def has_r_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Red)
+        return check_enabled_target(self, AnimationColorTargets.R)
 
     def has_g_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Green)
+        return check_enabled_target(self, AnimationColorTargets.G)
 
     def has_b_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8ColorTargets.Blue)
+        return check_enabled_target(self, AnimationColorTargets.B)
 
     r = ListField(u8(), 2, cond=has_r_target)
     g = ListField(u8(), 2, cond=has_g_target)
     b = ListField(u8(), 2, cond=has_b_target)
-
-
-class AnimationU8RandomPoolAlphaEntry(Structure):
-    def has_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationU8AlphaTargets.Alpha)
-
-    a = ListField(u8(), 2, cond=has_target)
-
-
-class AnimationU8RandomPoolEntry(Structure):
-    def get_entry_format(self) -> Field:
-        match get_anim_header(self).target:
-            case AnimTargetU8.Color1Primary.name | AnimTargetU8.Color2Primary.name | \
-                AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
-                return StructField(AnimationU8RandomPoolColorEntry, unroll=True)
-            case _:
-                return StructField(AnimationU8RandomPoolAlphaEntry, unroll=True)
-
-    entry = UnionField(get_entry_format)
+    t = ListField(u8(), 2, cond=has_single_target)
 
 ###############
 # Main Format #
@@ -172,26 +117,16 @@ class AnimationU8(Structure):
     key_frames = ListField(StructField(AnimationU8Frame), cond=skip_binary) # Parsed version
 
     range_table = StructField(AnimDataTable, cond=has_range_table)
-    range_values = ListField(StructField(AnimationU8Ranges), get_range_count, cond=has_range_table,
-                             alignment=4)
+    range_values = ListField(StructField(AnimationU8Ranges), get_range_count, cond=has_range_table, alignment=4)
 
     random_table = StructField(AnimDataTable, cond=has_random_table)
-    random_values = ListField(StructField(AnimationU8Ranges), get_random_count, cond=has_random_table,
-                            alignment=4)
+    random_values = ListField(StructField(AnimationU8Ranges), get_random_count, cond=has_random_table, alignment=4)
     random_pool = ListField(StructField(AnimationU8RandomPoolEntry, True), cond=skip_binary) # Parsed version
-
-    def get_targets(self) -> IntFlag:
-        match get_anim_header(self).target:
-            case AnimTargetU8.Color1Primary.name | AnimTargetU8.Color2Primary.name | \
-                AnimTargetU8.Color1Secondary.name | AnimTargetU8.Color2Secondary.name:
-                return AnimationU8ColorTargets
-            case _:
-                return AnimationU8AlphaTargets
 
     def to_json(self) -> dict[str, Any]:
 
         # Parse each frame
-        targets = self.get_targets()
+        sub_targets = get_anim_header(self).sub_targets
         for frame in self.frames:
 
             # Copy the basic info
@@ -199,34 +134,21 @@ class AnimationU8(Structure):
             parsed_frame.frame = frame.frame
             parsed_frame.value_type = frame.value_type
 
-            # Copy the random seed if necessary
-            if frame.value_type == KeyType.Random:
-                parsed_frame.random_seed = frame.key_data.idx
-
-            # Get the key data type, insert it and create the structure
-            key_data = AnimationU8Frame.targets.detect_field(parsed_frame).struct_type(parsed_frame)
-            parsed_frame.targets = key_data
-
             # Parse the enabled targets
-            i = 0
-            for target in targets:
-                if check_enabled_target(frame, target):
+            for i, target_name, target_value in get_enabled_targets(sub_targets):
 
-                    # Create the target and insert it into the data
-                    target_data = AnimationU8Target(parsed_frame)
-                    setattr(key_data, target.name[:1].lower(), target_data)
+                # Create the target and insert it into the frame
+                target_data = AnimationU8Target(parsed_frame)
+                setattr(parsed_frame, pascal_to_snake(target_name), target_data)
 
-                    # Get the interpolation and value/range
-                    target_data.interpolation = frame.curve_types[target.value.bit_length() - 1]
-                    if parsed_frame.value_type == KeyType.Fixed:
-                        target_data.value = frame.key_data.values[i]
-                    elif parsed_frame.value_type == KeyType.Range:
-                        range_idx = frame.key_data.idx
-                        range_values: AnimationU8Ranges = self.range_values[range_idx]
-                        target_data.range = range_values.values[i*2 : i*2 + 2]
-
-                    # Update the counter
-                    i += 1
+                # Get the interpolation and value/range
+                target_data.interpolation = frame.curve_types[target_value.bit_length() - 1]
+                if parsed_frame.value_type == KeyType.Fixed:
+                    target_data.value = frame.key_data.values[i]
+                elif parsed_frame.value_type == KeyType.Range:
+                    range_idx: int = frame.key_data.idx
+                    range_values: AnimationU8Ranges = self.range_values[range_idx]
+                    target_data.range = range_values.values[i*2 : i*2 + 2]
 
             # Add the parsed frame to the list
             self.key_frames.append(parsed_frame)
@@ -236,19 +158,8 @@ class AnimationU8(Structure):
 
             # Create parsed entry
             pool_entry = AnimationU8RandomPoolEntry(self)
-
-            # Get the pool entry data type, insert it and create the structure
-            pool_entry_data = AnimationU8RandomPoolEntry.entry.detect_field(pool_entry).struct_type(pool_entry)
-            pool_entry.entry = pool_entry_data
-
-            # Check the enabled targets
-            i = 0
-            for target in targets:
-                if check_enabled_target(frame, target):
-
-                    # Insert the range in the parsed pool entry
-                    setattr(pool_entry_data, target.name[:1].lower(), entry.values[i:i+2])
-                    i += 2
+            for i, target_name, _ in get_enabled_targets(sub_targets):
+                setattr(pool_entry, pascal_to_snake(target_name), entry.values[i*2 : i*2 + 2])
 
             # Add the new entry
             self.random_pool.append(pool_entry)

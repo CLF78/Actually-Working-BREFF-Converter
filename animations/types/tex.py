@@ -7,13 +7,9 @@ from enum import IntFlag
 from typing import Any
 from common.field import *
 from common.gx import GXTexWrapMode
+from animations.common import *
 from animations.tables import *
 from particle.texture import ReverseMode
-
-def get_anim_header(structure: Structure):
-    from animations.header import AnimationHeader
-    return structure.get_parent(AnimationHeader)
-
 
 class FlipRandom(IntFlag):
     FlipHorizontal = 1 << 0
@@ -71,12 +67,8 @@ class AnimationTexFrame(KeyFrameBase):
     def has_flip_random(self, _) -> bool:
         return self.value_type == KeyType.Range
 
-    def has_random_seed(self, _) -> bool:
-        return self.value_type == KeyType.Random
-
     data = StructField(AnimationTexParam, True, cond=has_data)
     flip_random = FlagEnumField(FlipRandom, cond=has_flip_random)
-    random_seed = u16(cond=has_random_seed)
 
 
 class AnimationTex(Structure):
@@ -98,13 +90,16 @@ class AnimationTex(Structure):
     def get_random_count(self) -> int:
         return self.random_table.entry_count
 
-    frames = ListField(StructField(AnimationTexFrame), cond=skip_binary)
     key_table = StructField(AnimDataTable, cond=skip_json)
     keys = ListField(StructField(AnimationTexKey), get_key_count, cond=skip_json)
+    frames = ListField(StructField(AnimationTexFrame), cond=skip_binary) # Parsed version
+
     range_table = StructField(AnimDataTable, cond=has_range_table)
     ranges = ListField(StructField(AnimationTexRange), get_range_count, cond=has_range_table)
+
     random_table = StructField(AnimDataTable, cond=has_random_table)
     random_pool = ListField(StructField(AnimationTexParam), get_random_count, cond=has_random_pool)
+
     name_table = StructField(NameTable, alignment=4, cond=skip_json)
 
     def to_json(self) -> dict[str, Any]:
@@ -124,8 +119,6 @@ class AnimationTex(Structure):
                 data: AnimationTexRange = self.ranges[key.data.idx]
                 parsed_frame.data = data.param
                 parsed_frame.flip_random = data.flip_random
-            elif key.value_type == KeyType.Random:
-                parsed_frame.random_seed = key.data.idx
 
             # Append frame
             self.frames.append(parsed_frame)

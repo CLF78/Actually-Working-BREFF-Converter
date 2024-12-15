@@ -26,10 +26,6 @@ class Animations(Structure):
     emitter_anims = ListField(StructField(AnimationHeader), get_emitter_anim_count, cond=skip_json)
     animations = ListField(StructField(AnimationHeader), cond=skip_binary)
 
-    # TODO write this method
-    def to_bytes(self) -> bytes:
-        return super().to_bytes()
-
     def to_json(self) -> dict:
 
         # Mark animations that need to run on frame 0 only

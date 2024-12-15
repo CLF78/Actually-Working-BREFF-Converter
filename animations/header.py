@@ -4,6 +4,7 @@
 # Animation header definition
 
 from common.field import *
+from animations.common import *
 from animations.flags import *
 from animations.types.child import AnimationChild
 from animations.types.u8 import AnimationU8
@@ -13,6 +14,15 @@ from animations.types.f32baked import AnimationF32Baked
 from animations.types.rotate import AnimationRotate
 from animations.types.tex import AnimationTex
 
+class AnimProcessFlag(IntFlag):
+    SyncRand        = 1 << 2
+    Stop            = 1 << 3 # Animation processes are stopped.
+    EmitterTiming   = 1 << 4 # The animation will run during emitter time.
+    LoopInfinitely  = 1 << 5 # The animation loops infinitely.
+    LoopByRepeating = 1 << 6 # The animation loops by repeating (if looping is enabled).
+    Fitting         = 1 << 7 # Expansion and contraction are performed according to the lifetime.
+
+
 class AnimationHeader(Structure):
     def has_frame_count(self, is_json: bool) -> bool:
         return not is_json or not (self.is_baked or self.is_init)
@@ -20,12 +30,29 @@ class AnimationHeader(Structure):
     def has_loop_count(self, is_json: bool) -> bool:
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
 
-    def get_param_count(self):
-        return bin(self.kind_enable).count('1')
+    def get_sub_targets(self) -> Field:
+
+        # Get the target type
+        target = get_target_from_type(self.curve_type, self.kind_type)
+
+        # For emitter parameters, use the dedicated map
+        if target == AnimTargetEmitterF32.EmitterParam.name:
+            shape = get_emitter(self).emitter_flags.shape
+            enum_type = get_emitter_param_targets(shape)
+
+        # Else use the generic function
+        else:
+            enum_type = get_sub_targets_from_type(self.curve_type, self.kind_type)
+
+        # If only one target is available, skip the field when converting to JSON
+        if enum_type is None or enum_type == AnimationSingleTarget:
+            return FlagEnumField(AnimationSingleTarget, cond=skip_json)
+        else:
+            return FlagEnumField(enum_type)
 
     def get_anim_data(self) -> Field:
 
-        # Get necessary data
+        # Insert necessary data in the class
         self.target = get_target_from_type(self.curve_type, self.kind_type)
         self.is_baked = self.magic == 0xAB
 
@@ -51,15 +78,15 @@ class AnimationHeader(Structure):
             case _:
                 return padding(1)
 
-    # Stupid ass workaround for Python's inability to properly handle duplicate enum values
-    target = string(cond=skip_binary)
-    is_init = boolean(cond=skip_binary)
-    is_baked = boolean(cond=skip_binary)
-
     magic = u8(cond=skip_json)
     kind_type = u8(cond=skip_json)
     curve_type = EnumField(AnimType, cond=skip_json)
-    kind_enable = u8(cond=skip_json)
+
+    # Stupid ass workaround for Python's inability to properly handle duplicate enum values
+    target = string(cond=skip_binary)
+    sub_targets = UnionField(get_sub_targets)
+    is_init = boolean(cond=skip_binary)
+    is_baked = boolean(cond=skip_binary)
 
     process_flag = FlagEnumField(AnimProcessFlag)
     loop_count = u8(cond=has_loop_count)
@@ -75,21 +102,13 @@ class AnimationHeader(Structure):
 
     data = UnionField(get_anim_data)
 
-    # TODO remove this garbage
+    # TODO remove this
     @classmethod
     def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional[Structure] = None) -> tuple[Structure, int]:
         data, _ = super().from_bytes(data, offset, parent)
         return data, offset + data.size()
 
-    def to_bytes(self) -> bytes:
-
-        # Set values
-        self.magic = 0xAB if self.is_baked else 0xAC
-        target = get_target_from_string(self.target)
-        self.kind_type = target.value
-        self.curve_type = get_type_from_target(target, self.is_baked)
-        return super().to_bytes()
-
+    # TODO remove this
     def size(self, start_field: Optional[Field] = None, end_field: Optional[Field] = None) -> int:
         size = super().size(start_field, end_field if end_field else AnimationHeader.info_table_size)
 

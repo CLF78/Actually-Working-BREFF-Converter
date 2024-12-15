@@ -7,11 +7,8 @@ from enum import IntFlag, auto
 from typing import Any
 from common.common import CEnum
 from common.field import *
+from animations.common import *
 from animations.tables import *
-
-def get_anim_header(structure: Structure):
-    from animations.header import AnimationHeader
-    return structure.get_parent(AnimationHeader)
 
 
 class ChildType(CEnum):
@@ -48,8 +45,9 @@ class AnimationChildParam(Structure):
         return super().to_json()
 
 
+# Used as part of the randomization algorithm, value is the index into the key list
 class AnimationChildRandomKey(Structure):
-    random_seed = u16('H10x') # Used as part of the randomization algorithm
+    idx = u16('H10x', cond=skip_json)
 
 
 class AnimationChildKeyFrame(KeyFrameBase):

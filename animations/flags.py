@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 
-# flags.py
-# Animation flag definitions
+# targets.py
+# Animation target definitions
 
-from enum import IntEnum, IntFlag
+from enum import IntEnum, IntFlag, auto
+from emitter.flags import EmitterShape
 
-class AnimProcessFlag(IntFlag):
-    SyncRand        = 1 << 2
-    Stop            = 1 << 3 # Animation processes are stopped.
-    EmitterTiming   = 1 << 4 # The animation will run during emitter time.
-    LoopInfinitely  = 1 << 5 # The animation loops infinitely.
-    LoopByRepeating = 1 << 6 # The animation loops by repeating (if looping is enabled).
-    Fitting         = 1 << 7 # Expansion and contraction are performed according to the lifetime.
+########################
+# Main Animation Types #
+########################
 
+class AnimType(IntEnum):
+    ParticleU8 = 0
+    PostField = 2 # v11 only?
+    ParticleF32 = 3
+    ParticleTexture = 4
+    Child = 5
+    ParticleRotate = 6 # For baked rotations, ParticleF32 is used instead
+    Field = 7
+    EmitterF32 = 11
+
+###########
+# Targets #
+###########
 
 class AnimTargetU8(IntEnum):
     Color1Primary = 0
@@ -25,16 +35,6 @@ class AnimTargetU8(IntEnum):
     Alpha2Secondary  = 15
     AlphaCompareRef0 = 119
     AlphaCompareRef1 = 120
-
-
-class AnimationU8ColorTargets(IntFlag):
-    Red   = 1 << 0
-    Green = 1 << 1
-    Blue  = 1 << 2
-
-
-class AnimationU8AlphaTargets(IntFlag):
-    Alpha = 1 << 0
 
 
 class AnimTargetF32(IntEnum):
@@ -50,21 +50,6 @@ class AnimTargetF32(IntEnum):
     TextureIndScale = 60
     TextureIndRotation = 76
     TextureIndTranslation = 96
-
-
-class AnimationF32VectorTargets(IntFlag):
-    X = 1 << 0
-    Y = 1 << 1
-    Z = 1 << 2
-
-
-class AnimationF32ParamTargets(IntFlag):
-    Param1 = 1 << 0
-    Param2 = 1 << 1
-    Param3 = 1 << 2
-    Param4 = 1 << 3
-    Param5 = 1 << 4
-    Param6 = 1 << 5
 
 
 class AnimTargetRotate(IntEnum):
@@ -106,73 +91,202 @@ class AnimTargetEmitterF32(IntEnum):
     EmitterSpeedYAxis = 76   # 1 param - vel power y axis
     EmitterSpeedRandom = 80  # 1 param - vel power random dir
     EmitterSpeedNormal = 84  # 1 param - vel power normal dir
-    EmitterSpeedSpecDir = 92 # 1 param - vel power spec dir
+    EmitterSpeedSpecDir = 92 # 5 params - vel power spec dir, vel diffusion spec dir, vel spec dir
     EmitterTranslation = 112 # 3 params
     EmitterScale = 124       # 3 params
     EmitterRotation = 136    # 3 params
 
+###############
+# Sub-targets #
+###############
 
-class AnimType(IntEnum):
-    ParticleU8 = 0
-    PostField = 2 # v11 only?
-    ParticleF32 = 3
-    ParticleTexture = 4
-    Child = 5
-    ParticleRotate = 6 # For baked rotations, ParticleF32 is used instead
-    Field = 7
-    EmitterF32 = 11
+class AnimationColorTargets(IntFlag):
+    R = auto()
+    G = auto()
+    B = auto()
+
+
+class AnimationSingleTarget(IntFlag):
+    T = auto()
+
+
+class AnimationVec2Targets(IntFlag):
+    X = auto()
+    Y = auto()
+
+
+class AnimationVec3Targets(IntFlag):
+    X = auto()
+    Y = auto()
+    Z = auto()
+
+
+class AnimationDiscParamTargets(IntFlag):
+    XSize = auto()
+    InnerRadius = auto()
+    AngleStart = auto()
+    AngleEnd = auto()
+    ZSize = auto()
+
+
+class AnimationLineParamTargets(IntFlag):
+    Length = auto()
+    XRot = auto()
+    YRot = auto()
+    ZRot = auto()
+
+
+class AnimationCubeParamTargets(IntFlag):
+    XSize = auto()
+    YSize = auto()
+    ZSize = auto()
+    InnerRadius = auto()
+
+
+class AnimationCylinderSphereTorusParamTargets(IntFlag):
+    XSize = auto()
+    InnerRadius = auto()
+    AngleStart = auto()
+    AngleEnd = auto()
+    YSize = auto()
+    ZSize = auto()
+
+
+class AnimationEmitterSpeedSpecDirTargets(IntFlag):
+    PowerSpecDir = auto()
+    DiffusionSpecDir = auto()
+    VelSpecDirX = auto()
+    VelSpecDirY = auto()
+    VelSpecDirZ = auto()
+
+
+class AnimationFieldGravityTargets(IntFlag):
+    Power = auto()
+    XRot = auto()
+    YRot = auto()
+    ZRot = auto()
+
+
+class AnimationFieldRandomTargets(IntFlag):
+    Power = auto()
+    Diffusion = auto()
+
+
+class AnimationFieldSpinTargets(IntFlag):
+    Speed = auto()
+    XRot = auto()
+    YRot = auto()
+    ZRot = auto()
+
+
+class AnimationFieldMagnetTargets(IntFlag):
+    Power = auto()
+    XTrans = auto()
+    YTrans = auto()
+    ZTrans = auto()
+
+
+class AnimationFieldNewtonTargets(IntFlag):
+    Power = auto()
+    RefDistance = auto()
+    XTrans = auto()
+    YTrans = auto()
+    ZTrans = auto()
+
+
+class AnimationFieldVortexTargets(IntFlag):
+    InnerSpeed = auto()
+    OuterSpeed = auto()
+    Distance = auto()
+    XTrans = auto()
+    YTrans = auto()
+    ZTrans = auto()
 
 
 TargetTypeMap = {
     AnimType.ParticleU8: {
-        AnimTargetU8.Color1Primary, AnimTargetU8.Alpha1Primary, AnimTargetU8.Color1Secondary,
-        AnimTargetU8.Alpha1Secondary, AnimTargetU8.Color2Primary, AnimTargetU8.Alpha2Primary,
-        AnimTargetU8.Color2Secondary, AnimTargetU8.Alpha2Secondary, AnimTargetU8.AlphaCompareRef0,
-        AnimTargetU8.AlphaCompareRef1
+        AnimTargetU8.Color1Primary: AnimationColorTargets,
+        AnimTargetU8.Alpha1Primary: AnimationSingleTarget,
+        AnimTargetU8.Color1Secondary: AnimationColorTargets,
+        AnimTargetU8.Alpha1Secondary: AnimationSingleTarget,
+        AnimTargetU8.Color2Primary: AnimationColorTargets,
+        AnimTargetU8.Alpha2Primary: AnimationSingleTarget,
+        AnimTargetU8.Color2Secondary: AnimationColorTargets,
+        AnimTargetU8.Alpha2Secondary: AnimationSingleTarget,
+        AnimTargetU8.AlphaCompareRef0: AnimationSingleTarget,
+        AnimTargetU8.AlphaCompareRef1: AnimationSingleTarget,
     },
 
     AnimType.ParticleF32: {
-        AnimTargetF32.ParticleSize, AnimTargetF32.ParticleScale, AnimTargetF32.Texture1Scale,
-        AnimTargetF32.Texture1Rotation, AnimTargetF32.Texture1Translation, AnimTargetF32.Texture2Scale,
-        AnimTargetF32.Texture2Rotation, AnimTargetF32.Texture2Translation, AnimTargetF32.TextureIndScale,
-        AnimTargetF32.TextureIndRotation, AnimTargetF32.TextureIndTranslation, AnimTargetF32.ParticleRotation
+        AnimTargetF32.ParticleSize: AnimationVec2Targets,
+        AnimTargetF32.ParticleScale: AnimationVec2Targets,
+        AnimTargetF32.Texture1Scale: AnimationVec2Targets,
+        AnimTargetF32.Texture1Rotation: AnimationSingleTarget,
+        AnimTargetF32.Texture1Translation: AnimationVec2Targets,
+        AnimTargetF32.Texture2Scale: AnimationVec2Targets,
+        AnimTargetF32.Texture2Rotation: AnimationSingleTarget,
+        AnimTargetF32.Texture2Translation: AnimationVec2Targets,
+        AnimTargetF32.TextureIndScale: AnimationVec2Targets,
+        AnimTargetF32.TextureIndRotation: AnimationSingleTarget,
+        AnimTargetF32.TextureIndTranslation: AnimationVec2Targets,
+        AnimTargetF32.ParticleRotation: AnimationVec3Targets,
     },
 
-    AnimType.ParticleRotate: {AnimTargetRotate.ParticleRotate},
+    AnimType.ParticleRotate: {
+        AnimTargetRotate.ParticleRotate: AnimationVec3Targets,
+    },
 
     AnimType.ParticleTexture: {
-        AnimTargetTexture.Texture1, AnimTargetTexture.Texture2, AnimTargetTexture.TextureInd
+        AnimTargetTexture.Texture1: AnimationSingleTarget,
+        AnimTargetTexture.Texture2: AnimationSingleTarget,
+        AnimTargetTexture.TextureInd: AnimationSingleTarget,
     },
 
-    AnimType.Child: {AnimTargetChild.Child},
+    AnimType.Child: {
+        AnimTargetChild.Child: AnimationSingleTarget,
+    },
 
     AnimType.Field: {
-        AnimTargetField.FieldGravity, AnimTargetField.FieldSpeed, AnimTargetField.FieldMagnet,
-        AnimTargetField.FieldNewton, AnimTargetField.FieldVortex, AnimTargetField.FieldSpin,
-        AnimTargetField.FieldRandom, AnimTargetField.FieldTail
+        AnimTargetField.FieldGravity: AnimationFieldGravityTargets,
+        AnimTargetField.FieldSpeed: AnimationSingleTarget,
+        AnimTargetField.FieldMagnet: AnimationFieldMagnetTargets,
+        AnimTargetField.FieldNewton: AnimationFieldNewtonTargets,
+        AnimTargetField.FieldVortex: AnimationFieldVortexTargets,
+        AnimTargetField.FieldSpin: AnimationFieldSpinTargets,
+        AnimTargetField.FieldRandom: AnimationFieldRandomTargets,
+        AnimTargetField.FieldTail: AnimationSingleTarget,
     },
 
+    # TODO fill these in correctly
     AnimType.PostField: {
-        AnimTargetPostField.PostFieldSize, AnimTargetPostField.PostFieldRotation,
-        AnimTargetPostField.PostFieldTranslation
+        AnimTargetPostField.PostFieldSize: AnimationSingleTarget,
+        AnimTargetPostField.PostFieldRotation: AnimationSingleTarget,
+        AnimTargetPostField.PostFieldTranslation: AnimationSingleTarget,
     },
 
     AnimType.EmitterF32: {
-        AnimTargetEmitterF32.EmitterParam, AnimTargetEmitterF32.EmitterScale,
-        AnimTargetEmitterF32.EmitterRotation, AnimTargetEmitterF32.EmitterTranslation,
-        AnimTargetEmitterF32.EmitterSpeedOrig, AnimTargetEmitterF32.EmitterSpeedYAxis,
-        AnimTargetEmitterF32.EmitterSpeedRandom, AnimTargetEmitterF32.EmitterSpeedNormal,
-        AnimTargetEmitterF32.EmitterSpeedSpecDir, AnimTargetEmitterF32.EmitterEmissionRatio
+        AnimTargetEmitterF32.EmitterParam: None,
+        AnimTargetEmitterF32.EmitterScale: AnimationVec3Targets,
+        AnimTargetEmitterF32.EmitterRotation: AnimationVec3Targets,
+        AnimTargetEmitterF32.EmitterTranslation: AnimationVec3Targets,
+        AnimTargetEmitterF32.EmitterSpeedOrig: AnimationSingleTarget,
+        AnimTargetEmitterF32.EmitterSpeedYAxis: AnimationSingleTarget,
+        AnimTargetEmitterF32.EmitterSpeedRandom: AnimationSingleTarget,
+        AnimTargetEmitterF32.EmitterSpeedNormal: AnimationSingleTarget,
+        AnimTargetEmitterF32.EmitterSpeedSpecDir: AnimationEmitterSpeedSpecDirTargets,
+        AnimTargetEmitterF32.EmitterEmissionRatio: AnimationSingleTarget,
     }
 }
 
-
-def get_type_from_target(target: IntEnum, baked: bool) -> AnimType:
-    for anim_type, targets in TargetTypeMap.items():
-        if target in targets:
-            return AnimType.ParticleF32 if (anim_type == AnimType.ParticleRotate and baked) else anim_type
-    raise ValueError(f'Unknown target: {target}')
-
+EmitterParamMap = {
+    EmitterShape.Disc: AnimationDiscParamTargets,
+    EmitterShape.Line: AnimationLineParamTargets,
+    EmitterShape.Cube: AnimationCubeParamTargets,
+    EmitterShape.Cylinder: AnimationCylinderSphereTorusParamTargets,
+    EmitterShape.Sphere: AnimationCylinderSphereTorusParamTargets,
+    EmitterShape.Point: None,
+    EmitterShape.Torus: AnimationCylinderSphereTorusParamTargets,
+}
 
 def get_target_from_type(type: AnimType, kind_value: int) -> str:
     for target in TargetTypeMap[type]:
@@ -180,11 +294,11 @@ def get_target_from_type(type: AnimType, kind_value: int) -> str:
             return target.name
     raise ValueError(f'Unknown target {kind_value} for animation type {type}')
 
+def get_sub_targets_from_type(type: AnimType, kind_value: int) -> IntFlag:
+    for target, sub_targets in TargetTypeMap[type].items():
+        if target == kind_value:
+            return sub_targets
+    raise ValueError(f'Unknown target {kind_value} for animation type {type}')
 
-# Stupid ass workaround for Python's inability to properly handle duplicate enum values
-def get_target_from_string(target: str) -> IntEnum:
-    for targets in TargetTypeMap.values():
-        for value in targets:
-            if value.name == target:
-                return value
-    raise ValueError(f'Unknown target: {target}')
+def get_emitter_param_targets(shape: EmitterShape):
+    return EmitterParamMap[shape]

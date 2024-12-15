@@ -84,7 +84,7 @@ class EmitterFlags(Structure):
         # Remove all flags that are not allowed
         for flag in TypeSpecificFlag:
             if flag not in self.get_allowed_flags():
-                data[snake_to_camel('type_specific_flags')].pop(flag.name)
+                data[snake_to_camel('type_specific_flags')].pop(pascal_to_camel(flag.name))
                 self.type_specific_flags &= ~flag
 
         # Return data

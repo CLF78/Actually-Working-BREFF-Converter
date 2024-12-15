@@ -27,7 +27,7 @@ class EmitterData(Structure):
             case EmitterShape.Cube:
                 return StructField(CubeParams)
             case _:
-                return StructField(CylindereSphereTorusParams)
+                return StructField(CylinderSphereTorusParams)
 
 
     def get_options(self) -> Field:
