@@ -48,13 +48,19 @@ class AnimationF32BakedFrame(Structure):
                check_enabled_target(self, AnimationCylinderSphereTorusParamTargets.ZSize)
 
     def has_x_rot_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationLineParamTargets.XRot)
+        return check_enabled_target(self, AnimationLineParamTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.XRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.XRot)
 
     def has_y_rot_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationLineParamTargets.YRot)
+        return check_enabled_target(self, AnimationLineParamTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.YRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.YRot)
 
     def has_z_rot_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationLineParamTargets.ZRot)
+        return check_enabled_target(self, AnimationLineParamTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldGravityTargets.ZRot) or \
+               check_enabled_target(self, AnimationFieldSpinTargets.ZRot)
 
     def has_inner_radius_target(self, _) -> bool:
         return check_enabled_target(self, AnimationDiscParamTargets.InnerRadius) or \
@@ -71,6 +77,60 @@ class AnimationF32BakedFrame(Structure):
 
     def has_length_target(self, _) -> bool:
         return check_enabled_target(self, AnimationLineParamTargets.Length)
+
+    def has_power_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldGravityTargets.Power) or \
+               check_enabled_target(self, AnimationFieldRandomTargets.Power) or \
+               check_enabled_target(self, AnimationFieldMagnetTargets.Power) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.Power)
+
+    def has_diffusion_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldRandomTargets.Diffusion)
+
+    def has_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldSpinTargets.Speed)
+
+    def has_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.Distance)
+
+    def has_ref_distance_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldNewtonTargets.RefDistance)
+
+    def has_inner_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.InnerSpeed)
+
+    def has_outer_speed_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldVortexTargets.OuterSpeed)
+
+    def has_x_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.XTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.XTrans)
+
+    def has_y_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.YTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.YTrans)
+
+    def has_z_trans_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationFieldMagnetTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldNewtonTargets.ZTrans) or \
+               check_enabled_target(self, AnimationFieldVortexTargets.ZTrans)
+
+    def has_power_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.PowerSpecDir)
+
+    def has_diffusion_spec_dir_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.DiffusionSpecDir)
+
+    def has_vel_spec_dir_x_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirX)
+
+    def has_vel_spec_dir_y_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirY)
+
+    def has_vel_spec_dir_z_target(self, _) -> bool:
+        return check_enabled_target(self, AnimationEmitterSpeedSpecDirTargets.VelSpecDirZ)
 
     t = f32(cond=has_single_target)
 
@@ -91,6 +151,25 @@ class AnimationF32BakedFrame(Structure):
     angle_end = f32(cond=has_angle_end_target)
 
     length = f32(cond=has_length_target)
+
+    power = f32(cond=has_power_target)
+    diffusion = f32(cond=has_diffusion_target)
+    speed = f32(cond=has_speed_target)
+    distance = f32(cond=has_distance_target)
+
+    x_trans = f32(cond=has_x_trans_target)
+    y_trans = f32(cond=has_y_trans_target)
+    z_trans = f32(cond=has_z_trans_target)
+
+    ref_distance = f32(cond=has_ref_distance_target)
+    inner_speed = f32(cond=has_inner_speed_target)
+    outer_speed = f32(cond=has_outer_speed_target)
+
+    power_spec_dir = f32(cond=has_power_spec_dir_target)
+    diffusion_spec_dir = f32(cond=has_diffusion_spec_dir_target)
+    vel_spec_dir_x = f32(cond=has_vel_spec_dir_x_target)
+    vel_spec_dir_y = f32(cond=has_vel_spec_dir_y_target)
+    vel_spec_dir_z = f32(cond=has_vel_spec_dir_z_target)
 
 ###############
 # Main Format #

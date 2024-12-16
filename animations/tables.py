@@ -34,7 +34,8 @@ class KeyCurveType(CEnum):
 
 class KeyFrameBase(Structure):
     def has_frame(self, is_json: bool) -> bool:
-        return not is_json or not self.parent.parent.is_init
+        from animations.common import get_anim_header
+        return not is_json or not get_anim_header(self).is_init
 
     frame = u16(default=0, cond=has_frame)
     value_type = EnumField(KeyType, 'Bx')

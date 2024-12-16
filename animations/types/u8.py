@@ -101,13 +101,13 @@ class AnimationU8(Structure):
         return self.frame_table.entry_count
 
     def has_range_table(self, is_json: bool) -> bool:
-        return not is_json and self.parent.range_table_size != 0
+        return not is_json and get_anim_header(self).range_table_size != 0
 
     def get_range_count(self) -> int:
         return self.range_table.entry_count
 
     def has_random_table(self, is_json: bool) -> bool:
-        return not is_json and self.parent.random_table_size != 0
+        return not is_json and get_anim_header(self).random_table_size != 0
 
     def get_random_count(self) -> int:
         return self.random_table.entry_count

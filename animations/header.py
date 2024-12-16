@@ -11,6 +11,7 @@ from animations.types.u8 import AnimationU8
 from animations.types.u8baked import AnimationU8Baked
 from animations.types.f32 import AnimationF32
 from animations.types.f32baked import AnimationF32Baked
+from animations.types.field import AnimationField
 from animations.types.rotate import AnimationRotate
 from animations.types.tex import AnimationTex
 
@@ -73,6 +74,9 @@ class AnimationHeader(Structure):
 
             case AnimType.ParticleTexture:
                 return StructField(AnimationTex, True)
+
+            case AnimType.Field:
+                return StructField(AnimationField, True)
 
             # Unknown data type (yet)
             case _:
