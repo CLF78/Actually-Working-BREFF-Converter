@@ -4,10 +4,8 @@
 # Converts a BREFF file to a series of JSON5 files
 
 import argparse
-import json5
 from pathlib import Path
-
-from common.common import META_FILE
+from common.common import META_FILE, json_dump
 from effect.effect import BinaryFileHeader, EffectTable, Effect
 
 def decode(src: Path, dst: Path) -> None:
@@ -28,23 +26,23 @@ def decode(src: Path, dst: Path) -> None:
     header, _ = BinaryFileHeader.from_bytes(src_data)
 
     # Write the meta file
-    with open(Path(dst, META_FILE), 'w', encoding='utf-8') as f:
-        json5.dump(header.to_json(), f, indent=4)
+    meta_file = Path(dst, META_FILE)
+    json_dump(meta_file, header.to_json())
 
     # Create the effect table from the project data, then iterate it
     effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
     for entry in effect_table.entries:
 
-        print(f'Parsing {entry.name.name}...')
+        #print(f'Parsing {entry.name.name}...')
         effect, _ = Effect.from_bytes(entry.data)
-        with open(Path(dst, f'{entry.name.name}.json5'), 'w', encoding='utf-8') as f:
-            json5.dump(effect.to_json(), f, indent=4)
+        effect_file = Path(dst, f'{entry.name.name}.json')
+        json_dump(effect_file, effect.to_json())
 
 
 if __name__ == '__main__':
 
     # Parse command line args
-    parser = argparse.ArgumentParser(description='Converts a BREFF file to a set of JSON5 files')
+    parser = argparse.ArgumentParser(description='Converts a BREFF file to a set of JSON files')
     parser.add_argument('inputs', nargs='+', type=Path, help='The files to convert', action='append')
     parser.add_argument('-o', '--outputs', nargs='*', type=Path, help='The output directory for each file')
     args = parser.parse_args()

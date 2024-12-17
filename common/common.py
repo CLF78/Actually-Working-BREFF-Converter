@@ -3,9 +3,30 @@
 # common.py
 # Common utilities
 
+import re
 from enum import IntEnum
+from pathlib import Path
 
-META_FILE = 'meta.json5'
+META_FILE = 'meta.json'
+
+try:
+    import orjson
+
+    def json_dump(path: Path, data: dict) -> None:
+        path.write_bytes(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+
+    def json_load(path: Path) -> dict:
+        return orjson.loads(path.read_bytes())
+
+except ImportError:
+    import json
+
+    def json_dump(path: Path, data: dict) -> None:
+        json.dump(data, path, separators=(',', ': '), indent=2)
+
+    def json_load(path: Path) -> dict:
+        return json.load(path)
+
 
 # Aligns an integer to the given value
 def align(value: int, alignment: int) -> int:
@@ -22,12 +43,13 @@ def pad(data: bytes, alignment: int):
 # Convert snake_case to camelCase
 def snake_to_camel(snake_str: str) -> str:
     components = snake_str.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
+    return components[0] + ''.join(x.capitalize() for x in components[1:])
 
 
 # Utility function to convert camelCase to snake_case
+CAMEL_TO_SNAKE_PATTERN = re.compile(r'([a-z0-9])([A-Z])')
 def camel_to_snake(camel_str: str) -> str:
-    return ''.join(['_' + c.lower() if c.isupper() else c for c in camel_str]).lstrip('_')
+    return CAMEL_TO_SNAKE_PATTERN.sub(r'\1_\2', camel_str).lower()
 
 
 # Utility function to convert PascalCase to camelCase
@@ -42,12 +64,13 @@ def camel_to_pascal(camel_str: str) -> str:
 
 # Utility function to convert snake_case to PascalCase
 def snake_to_pascal(snake_str: str) -> str:
-    return ''.join(x.title() for x in snake_str.split('_'))
+    return ''.join(x.capitalize() for x in snake_str.split('_'))
 
 
 # Utility function to convert PascalCase to snake_case
+PASCAL_TO_SNAKE_PATTERN = re.compile(r'([A-Z])')
 def pascal_to_snake(pascal_str: str) -> str:
-    return ''.join(['_' + c.lower() if c.isupper() else c for c in pascal_str]).lstrip('_')
+    return PASCAL_TO_SNAKE_PATTERN.sub(r'_\1', pascal_str).lower().lstrip('_')
 
 
 # An enum whose value starts from zero

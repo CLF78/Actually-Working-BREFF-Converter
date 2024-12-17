@@ -68,13 +68,13 @@ class AnimationRotateFrame(KeyFrameBase):
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.X)
+        self.x is not None
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.Y)
+        self.y is not None
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.Z)
+        self.z is not None
 
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
     x = StructField(AnimationRotateTarget, cond=has_x_target)
@@ -87,13 +87,13 @@ class AnimationRotateRandomPoolEntry(Structure):
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.X)
+        self.x is not None
 
     def has_y_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.Y)
+        self.y is not None
 
     def has_z_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationVec3Targets.Z)
+        self.z is not None
 
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
     x = StructField(AnimationRotateTarget, cond=has_x_target)

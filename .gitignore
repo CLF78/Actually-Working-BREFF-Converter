@@ -1,9 +1,8 @@
 # Test Files
 *.breff
 *.d
-*.json5
+*.json
 *.txt
-sampleV11/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

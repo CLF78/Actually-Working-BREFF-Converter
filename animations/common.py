@@ -25,17 +25,11 @@ def get_sub_target_count(structure: Structure):
 def get_key_type(structure: Structure) -> KeyType:
     return structure.get_parent(KeyFrameBase).value_type
 
-# Iterates the sub targets
+# Gets the enabled targets
 def get_enabled_targets(sub_targets: IntFlag):
-    for i, name in enumerate(sub_targets.name.split('|')):
-        flag_value = sub_targets.__class__[name].value
-        yield (i, name, flag_value)
-
-# Checks if a sub target is enabled
-def check_enabled_target(structure: Structure, target: IntFlag) -> bool:
-    sub_targets = get_anim_header(structure).sub_targets
-    return (sub_targets & target) != 0 if type(target) == type(sub_targets) else False
+    for i, entry in enumerate(sub_targets):
+        yield i, entry.name, entry.value
 
 # Checks if the only available target is enabled
 def has_single_target(self: Structure, _) -> bool:
-    return check_enabled_target(self, AnimationSingleTarget.T)
+    return self.t is not None

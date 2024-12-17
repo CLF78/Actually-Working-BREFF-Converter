@@ -1,6 +1,6 @@
 import struct
 from enum import IntEnum, IntFlag
-from typing import Any, Callable, cast, Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Callable, Optional, Type, TypeVar
 from common.common import align, pad, snake_to_camel, pascal_to_camel, camel_to_pascal
 
 # Base definitions
@@ -54,17 +54,6 @@ class Field:
         self.cond = cond
         self.private_name = ''
 
-    def __set_name__(self, owner: Any, name: str) -> None:
-        self.private_name = f'_{name}'
-
-    def __get__(self, instance: Any, owner: Any) -> Any:
-        if instance is None:
-            return self
-        return getattr(instance, self.private_name)
-
-    def __set__(self, instance: Any, value: Any) -> None:
-        setattr(instance, self.private_name, value)
-
     def from_bytes(self, data: bytes, offset: int, parent: Optional['Structure'] = None) -> tuple[Any, int]:
         """
         Converts the field from its binary representation.
@@ -90,8 +79,6 @@ class Field:
         :param value: The data to be converted.
         :return: The converted data.
         """
-        if type(value) != type(self.default):
-            raise TypeError('Type of field does not match expected format!')
         return value
 
     def to_json(self, value: Any) -> Any:
@@ -117,17 +104,17 @@ class StructureMeta(type):
         # Get the base class fields
         fields: FieldDict = {}
         for base in bases:
-            fields.update(getattr(base, FIELD_LIST, {}))
+            if hasattr(base, FIELD_LIST):
+                fields.update(base._fields_)
 
         # Add the class' own fields
-        fields.update({k: v for k, v in class_dict.items() if isinstance(v, Field)})
-
-        # Set the private names and apply the dictionary
-        for field_name, field in fields.items():
-            field.__set_name__(cls, field_name)
-        class_dict[FIELD_LIST] = fields
+        for k, v in class_dict.items():
+            if isinstance(v, Field):
+                fields[k] = v
+                v.private_name = k
 
         # Continue
+        class_dict[FIELD_LIST] = fields
         return super().__new__(cls, name, bases, class_dict)
 
 
@@ -139,8 +126,8 @@ class Structure(metaclass=StructureMeta):
         fields: FieldDict = self._fields_
         self._fields_ = dict.copy(fields)
         for name, field in fields.items():
-            if hasattr(field.default, 'copy'):
-                setattr(self, name, field.default.copy()) # Workaround for lists and dicts
+            if isinstance(field, ListField):
+                setattr(self, name, list()) # Workaround for lists
             else:
                 setattr(self, name, field.default)
 
@@ -161,7 +148,7 @@ class Structure(metaclass=StructureMeta):
                 continue
 
             # TODO remove debug print
-            print(f'Decoding field {name} (type {type(field).__name__}) at offset {hex(offset)}')
+            #print(f'Decoding field {name} (type {type(field).__name__}) at offset {hex(offset)}')
 
             # Decode field and update offset
             value, offset = field.from_bytes(data, offset, self)
@@ -268,7 +255,7 @@ class Structure(metaclass=StructureMeta):
         current = self
         while current:
             if isinstance(current, parent_type):
-                return cast(S, current)
+                return current
             current = current.parent
         raise ValueError(f'No parent of type {parent_type.__name__} found')
 
@@ -286,52 +273,52 @@ class padding(Field):
 
 
 class s8(Field):
-    def __init__(self, fmt: str = 'b', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'b', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class u8(Field):
-    def __init__(self, fmt: str = 'B', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'B', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class s16(Field):
-    def __init__(self, fmt: str = 'h', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'h', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class u16(Field):
-    def __init__(self, fmt: str = 'H', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'H', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class s32(Field):
-    def __init__(self, fmt: str = 'i', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'i', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class u32(Field):
-    def __init__(self, fmt: str = 'I', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'I', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class u64(Field):
-    def __init__(self, fmt: str = 'Q', default: int = 0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'Q', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class f32(Field):
-    def __init__(self, fmt: str = 'f', default: float = 0.0, **kwargs) -> None:
+    def __init__(self, fmt: str = 'f', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class boolean(Field):
-    def __init__(self, fmt: str = '?', default: bool = False, **kwargs) -> None:
+    def __init__(self, fmt: str = '?', default = None, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
 
 
 class raw(Field):
-    def __init__(self, default: bytes = b'', length: FieldLength = 0, **kwargs) -> None:
+    def __init__(self, default = None, length: FieldLength = 0, **kwargs) -> None:
         super().__init__('', default, **kwargs)
         self.length = length
 
@@ -340,7 +327,7 @@ class raw(Field):
         if callable(self.length):
             length = self.length(parent)
         elif isinstance(self.length, Field):
-            length = getattr(parent, self.length.private_name[1:])
+            length = getattr(parent, self.length.private_name)
 
         end = offset + length
         return data[offset:end], end
@@ -353,7 +340,7 @@ class raw(Field):
 
 
 class string(Field):
-    def __init__(self, default: str = '', **kwargs) -> None:
+    def __init__(self, default = None, **kwargs) -> None:
         super().__init__('', default, **kwargs)
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[str, int]:
@@ -370,7 +357,7 @@ class string(Field):
 
 
 class EnumField(Field):
-    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', default: int = 0,
+    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', default = None,
                  mask: int | IntEnum = -1, **kwargs) -> None:
         super().__init__(fmt, default, **kwargs)
         self.enum_type = enum_type
@@ -391,7 +378,7 @@ class EnumField(Field):
 
 
 class FlagEnumField(EnumField):
-    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', default: int = 0,
+    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', default = None,
                  mask: int | IntFlag = -1, **kwargs) -> None:
         super().__init__(enum_type, fmt, default, mask, **kwargs)
 
@@ -438,7 +425,7 @@ class UnionField(Field):
 
     def detect_field(self, parent: Structure) -> Field:
         selected_field = self.type_selector(parent)
-        parent._fields_[self.private_name[1:]] = selected_field
+        parent._fields_[self.private_name] = selected_field
         return selected_field
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
@@ -463,7 +450,7 @@ class UnionField(Field):
 
 class ListField(Field):
     def __init__(self, item_field: F, length: FieldLength = 0, **kwargs) -> None:
-        super().__init__('', default=[], **kwargs)
+        super().__init__('', default=None, **kwargs)
         self.item_field = item_field
         self.length = length
 
@@ -478,7 +465,7 @@ class ListField(Field):
         if callable(self.length):
             length = self.length(parent)
         elif isinstance(self.length, Field):
-            length = getattr(parent, self.length.private_name[1:])
+            length = getattr(parent, self.length.private_name)
 
         # Parsing loop
         value = []

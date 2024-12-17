@@ -23,13 +23,13 @@ class AnimationU8BakedKey(Structure):
 
 class AnimationU8BakedFrame(Structure):
     def has_r_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.R)
+        return self.r is not None
 
     def has_g_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.G)
+        return self.g is not None
 
     def has_b_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.B)
+        return self.b is not None
 
     r = u8(cond=has_r_target)
     g = u8(cond=has_g_target)

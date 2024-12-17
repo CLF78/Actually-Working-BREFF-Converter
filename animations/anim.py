@@ -29,12 +29,12 @@ class Animations(Structure):
     def to_json(self) -> dict:
 
         # Mark animations that need to run on frame 0 only
-        for i in range(self.particle_anim_table.init_anim_count):
-            self.particle_anims[i].is_init = True
+        for i, anim in enumerate(self.particle_anims):
+            anim.is_init = i < self.particle_anim_table.init_anim_count
 
         # Mark animations that need to run on frame 0 only
-        for i in range(self.emitter_anim_table.init_anim_count):
-            self.emitter_anims[i].is_init = True
+        for i, anim in enumerate(self.emitter_anims):
+            anim.is_init = i < self.emitter_anim_table.init_anim_count
 
         # Merge animation lists
         self.animations = self.particle_anims + self.emitter_anims

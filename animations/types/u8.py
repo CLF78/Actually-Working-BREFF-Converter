@@ -62,13 +62,13 @@ class AnimationU8Target(Structure):
 
 class AnimationU8Frame(KeyFrameBase):
     def has_r_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.R)
+        return self.r is not None
 
     def has_g_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.G)
+        return self.g is not None
 
     def has_b_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.B)
+        return self.b is not None
 
     r = StructField(AnimationU8Target, cond=has_r_target)
     g = StructField(AnimationU8Target, cond=has_g_target)
@@ -78,13 +78,13 @@ class AnimationU8Frame(KeyFrameBase):
 
 class AnimationU8RandomPoolEntry(Structure):
     def has_r_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.R)
+        return self.r is not None
 
     def has_g_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.G)
+        return self.g is not None
 
     def has_b_target(self, _) -> bool:
-        return check_enabled_target(self, AnimationColorTargets.B)
+        return self.b is not None
 
     r = ListField(u8(), 2, cond=has_r_target)
     g = ListField(u8(), 2, cond=has_g_target)
