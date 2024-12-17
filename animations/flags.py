@@ -257,11 +257,10 @@ TargetTypeMap = {
         AnimTargetField.FieldTail: AnimationSingleTarget,
     },
 
-    # TODO fill these in correctly
     AnimType.PostField: {
-        AnimTargetPostField.PostFieldSize: AnimationSingleTarget,
-        AnimTargetPostField.PostFieldRotation: AnimationSingleTarget,
-        AnimTargetPostField.PostFieldTranslation: AnimationSingleTarget,
+        AnimTargetPostField.PostFieldSize: AnimationVec3Targets,
+        AnimTargetPostField.PostFieldRotation: AnimationVec3Targets,
+        AnimTargetPostField.PostFieldTranslation: AnimationVec3Targets,
     },
 
     AnimType.EmitterF32: {

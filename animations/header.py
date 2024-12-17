@@ -7,13 +7,14 @@ from common.field import *
 from animations.common import *
 from animations.flags import *
 from animations.types.child import AnimationChild
-from animations.types.u8 import AnimationU8
-from animations.types.u8baked import AnimationU8Baked
 from animations.types.f32 import AnimationF32
 from animations.types.f32baked import AnimationF32Baked
 from animations.types.field import AnimationField
+from animations.types.postfield import AnimationPostField
 from animations.types.rotate import AnimationRotate
 from animations.types.tex import AnimationTex
+from animations.types.u8 import AnimationU8
+from animations.types.u8baked import AnimationU8Baked
 
 class AnimProcessFlag(IntFlag):
     SyncRand        = 1 << 2
@@ -58,7 +59,6 @@ class AnimationHeader(Structure):
         self.is_baked = self.magic == 0xAB
 
         # Create the data
-        # TODO finish writing method
         match self.curve_type:
             case AnimType.ParticleU8:
                 return StructField(AnimationU8 if not self.is_baked else AnimationU8Baked, True)
@@ -78,9 +78,8 @@ class AnimationHeader(Structure):
             case AnimType.Field:
                 return StructField(AnimationField, True)
 
-            # Unknown data type (yet)
-            case _:
-                return padding(1)
+            case AnimType.PostField:
+                return StructField(AnimationPostField, True)
 
     magic = u8(cond=skip_json)
     kind_type = u8(cond=skip_json)
@@ -97,27 +96,11 @@ class AnimationHeader(Structure):
     random_seed = u16()
     frame_count = u16('H2x', default=1, cond=has_frame_count)
 
-    # TODO remove these from the JSON
-    key_table_size = u32()
-    range_table_size = u32()
-    random_table_size = u32()
-    name_table_size = u32()
-    info_table_size = u32()
+    key_table_size = u32(cond=skip_json)
+    range_table_size = u32(cond=skip_json)
+    random_table_size = u32(cond=skip_json)
+    name_table_size = u32(cond=skip_json)
+    info_table_size = u32(cond=skip_json)
 
     data = UnionField(get_anim_data)
 
-    # TODO remove this
-    @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0, parent: Optional[Structure] = None) -> tuple[Structure, int]:
-        data, _ = super().from_bytes(data, offset, parent)
-        return data, offset + data.size()
-
-    # TODO remove this
-    def size(self, start_field: Optional[Field] = None, end_field: Optional[Field] = None) -> int:
-        size = super().size(start_field, end_field if end_field else AnimationHeader.info_table_size)
-
-        if end_field is None:
-            size += self.key_table_size + self.range_table_size + self.random_table_size + \
-                    self.name_table_size + self.info_table_size
-
-        return size

@@ -8,7 +8,6 @@ from common.common import pascal_to_snake
 from common.field import *
 from animations.common import *
 from animations.tables import *
-from animations.flags import *
 
 ###############
 # Key Formats #

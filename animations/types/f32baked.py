@@ -7,7 +7,6 @@ from typing import Any
 from common.common import pascal_to_snake
 from common.field import *
 from animations.common import *
-from animations.flags import *
 from animations.tables import *
 
 ##############

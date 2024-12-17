@@ -41,7 +41,7 @@ class AnimationChildParam(Structure):
     name_idx = u16(cond=skip_json)
 
     def to_json(self) -> dict[str, Any]:
-        self.name = self.get_parent(AnimationChild).name_table.names[self.name_idx].name
+        self.name = get_anim_header(self).data.name_table.names[self.name_idx].name
         return super().to_json()
 
 
