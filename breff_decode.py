@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 # breff_decode.py
-# Converts a BREFF file to a series of JSON5 files
+# Converts a BREFF file to a series of JSON files
 
+import sys
 from pathlib import Path
 from common.args import args
 from common.common import META_FILE, json_dump
 from effect.effect import BinaryFileHeader, EffectTable, Effect
+
+if sys.version_info < (3, 10):
+    raise SystemExit('Please update your copy of Python to 3.10 or greater. Currently running on: ' + sys.version.split()[0])
+
 
 def decode(src: Path, dst: Path) -> None:
 
@@ -33,7 +38,9 @@ def decode(src: Path, dst: Path) -> None:
     effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
     for entry in effect_table.entries:
 
-        #print(f'Parsing {entry.name.name}...')
+        if args.verbose:
+            print(f'Parsing {entry.name.name}...')
+
         effect, _ = Effect.from_bytes(entry.data)
         effect_file = Path(dst, f'{entry.name.name}.json')
         json_dump(effect_file, effect.to_json())
