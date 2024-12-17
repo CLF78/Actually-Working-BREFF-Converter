@@ -3,8 +3,8 @@
 # breff_decode.py
 # Converts a BREFF file to a series of JSON5 files
 
-import argparse
 from pathlib import Path
+from common.args import args
 from common.common import META_FILE, json_dump
 from effect.effect import BinaryFileHeader, EffectTable, Effect
 
@@ -40,12 +40,6 @@ def decode(src: Path, dst: Path) -> None:
 
 
 if __name__ == '__main__':
-
-    # Parse command line args
-    parser = argparse.ArgumentParser(description='Converts a BREFF file to a set of JSON files')
-    parser.add_argument('inputs', nargs='+', type=Path, help='The files to convert', action='append')
-    parser.add_argument('-o', '--outputs', nargs='*', type=Path, help='The output directory for each file')
-    args = parser.parse_args()
 
     # Get inputs and outputs
     args.inputs = args.inputs[0]
