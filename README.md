@@ -24,7 +24,7 @@ If you find any file to be incompatible, please open an issue and attach it!
    cd Actually-Working-BREFF-Converter
    ```
 
-3. Ensure Python 3.10 or greater is installed.
+3. Ensure Python 3.11 or greater is installed.
 
 4. Optionally, install `orjson` to speed up parsing:
 

@@ -9,8 +9,8 @@ from common.args import args
 from common.common import META_FILE, json_dump
 from effect.effect import BinaryFileHeader, EffectTable, Effect
 
-if sys.version_info < (3, 10):
-    raise SystemExit('Please update your copy of Python to 3.10 or greater. Currently running on: ' + sys.version.split()[0])
+if sys.version_info < (3, 11):
+    raise SystemExit('Please update your copy of Python to 3.11 or greater. Currently running on: ' + sys.version.split()[0])
 
 
 def decode(src: Path, dst: Path) -> None:

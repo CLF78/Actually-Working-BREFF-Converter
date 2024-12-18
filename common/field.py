@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+
+# field.py
+# Base field definitions.
+
 import struct
 from enum import IntEnum, IntFlag
 from typing import Any, Callable, Callable, Optional, Type, TypeVar
