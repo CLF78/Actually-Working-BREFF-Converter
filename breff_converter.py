@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
-# breff_decode.py
-# Converts a BREFF file to a series of JSON files
+# breff_converter.py
+# Converts a BREFF file to a series of JSON files and back
 
 import sys
 from pathlib import Path
 from common.args import args
-from common.common import META_FILE, json_dump
+from common.common import META_FILE, json_dump, json_load
 from effect.effect import BinaryFileHeader, EffectTable, Effect
 
 if sys.version_info < (3, 11):
     raise SystemExit('Please update your copy of Python to 3.11 or greater. Currently running on: ' + sys.version.split()[0])
-
 
 def decode(src: Path, dst: Path) -> None:
 
@@ -46,14 +45,43 @@ def decode(src: Path, dst: Path) -> None:
         json_dump(effect_file, effect.to_json())
 
 
+def encode(src: Path, dst: Path) -> None:
+
+    # Ensure directory exists
+    if not src.is_dir():
+        raise SystemExit(f'Could not find directory {src}.')
+
+    # Ensure a meta file is present in the directory
+    meta_file = Path(src, META_FILE)
+    if not meta_file.is_file():
+        raise SystemExit(f'Missing metadata file in directory {src}.')
+
+    # Read the meta file
+    meta_data = json_load(meta_file)
+    header = BinaryFileHeader.from_json(meta_data)
+
+    # TODO fill actual data in
+    header.block.project.project_data = b''
+
+    # Dump the data
+    dst.write_bytes(header.to_bytes())
+
+
 if __name__ == '__main__':
+
+    # Define valid operations
+    operations = {
+        'decode': decode,
+        'encode': encode,
+    }
 
     # Get inputs and outputs
     args.inputs = args.inputs[0]
     if args.outputs is None:
-        args.outputs = [file.with_suffix('.d') for file in args.inputs]
-    else:
-        args.outputs = args.outputs[0]
+        if args.operation == 'decode':
+            args.outputs = [file.with_suffix('.d') for file in args.inputs]
+        else:
+            args.outputs = [file.with_suffix('.breff') for file in args.inputs]
 
     # Ensure the amount of outputs equals the number of inputs
     if len(args.outputs) != len(args.inputs):
@@ -61,4 +89,4 @@ if __name__ == '__main__':
 
     # Execute function
     for src, dest in zip(args.inputs, args.outputs):
-        decode(src, dest)
+        operations[args.operation](src, dest)
