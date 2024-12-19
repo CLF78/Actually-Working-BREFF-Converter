@@ -6,8 +6,7 @@
 import struct
 from enum import IntEnum, IntFlag
 from typing import Any, Callable, Callable, Optional, Type, TypeVar
-from common.args import args
-from common.common import align, pad, snake_to_camel, pascal_to_camel, camel_to_pascal
+from common.common import align, pad, snake_to_camel, pascal_to_camel, camel_to_pascal, printv
 
 # Base definitions
 S = TypeVar('S', bound='Structure')
@@ -153,11 +152,8 @@ class Structure(metaclass=StructureMeta):
             if field.cond and not field.cond(self, False):
                 continue
 
-            # Print field information if verbose is enabled
-            if args.verbose:
-                print(f'Decoding field {name} (type {type(field).__name__}) at offset {hex(offset)}')
-
             # Decode field and update offset
+            printv(f'Decoding field {name} (type {type(field).__name__}) at offset {hex(offset)}')
             value, offset = field.from_bytes(data, offset, self)
             setattr(self, name, value)
 

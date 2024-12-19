@@ -6,6 +6,7 @@
 import re
 from enum import IntEnum
 from pathlib import Path
+from common.args import args
 
 META_FILE = 'meta.json'
 
@@ -28,6 +29,12 @@ except ImportError:
     def json_load(path: Path) -> dict:
         data = path.read_text(encoding='utf-8')
         return json.loads(data)
+
+
+# Debug print helper
+def printv(*args, **kwargs):
+    if args.verbose:
+        print(*args, **kwargs)
 
 
 # Aligns an integer to the given value
