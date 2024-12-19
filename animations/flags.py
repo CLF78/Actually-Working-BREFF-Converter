@@ -160,6 +160,14 @@ class AnimationEmitterSpeedSpecDirTargets(IntFlag):
     VelSpecDirZ = auto()
 
 
+class AnimationFieldSpeedTargets(IntFlag):
+    Speed = auto()
+
+
+class AnimationFieldTailTargets(IntFlag):
+    Power = auto()
+
+
 class AnimationFieldGravityTargets(IntFlag):
     Power = auto()
     XRot = auto()
@@ -248,13 +256,13 @@ TargetTypeMap = {
 
     AnimType.Field: {
         AnimTargetField.FieldGravity: AnimationFieldGravityTargets,
-        AnimTargetField.FieldSpeed: AnimationSingleTarget,
+        AnimTargetField.FieldSpeed: AnimationFieldSpeedTargets,
         AnimTargetField.FieldMagnet: AnimationFieldMagnetTargets,
         AnimTargetField.FieldNewton: AnimationFieldNewtonTargets,
         AnimTargetField.FieldVortex: AnimationFieldVortexTargets,
         AnimTargetField.FieldSpin: AnimationFieldSpinTargets,
         AnimTargetField.FieldRandom: AnimationFieldRandomTargets,
-        AnimTargetField.FieldTail: AnimationSingleTarget,
+        AnimTargetField.FieldTail: AnimationFieldTailTargets,
     },
 
     AnimType.PostField: {
