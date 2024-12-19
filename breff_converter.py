@@ -6,7 +6,7 @@
 import sys
 from pathlib import Path
 from common.args import args
-from common.common import META_FILE, json_dump, json_load
+from common.common import META_FILE, json_dump, json_load, printv
 from effect.effect import BinaryFileHeader, EffectTable, Effect
 
 if sys.version_info < (3, 11):
@@ -26,6 +26,7 @@ def decode(src: Path, dst: Path) -> None:
     dst.mkdir(parents=True, exist_ok=True)
 
     # Open file and decode it
+    printv(f'Parsing file {src}...')
     src_data = src.read_bytes()
     header, _ = BinaryFileHeader.from_bytes(src_data)
 
@@ -37,9 +38,7 @@ def decode(src: Path, dst: Path) -> None:
     effect_table, _ = EffectTable.from_bytes(header.block.project.project_data)
     for entry in effect_table.entries:
 
-        if args.verbose:
-            print(f'Parsing {entry.name.name}...')
-
+        printv(f'Parsing effect {entry.name.name}...')
         effect, _ = Effect.from_bytes(entry.data)
         effect_file = Path(dst, f'{entry.name.name}.json')
         json_dump(effect_file, effect.to_json())
@@ -57,6 +56,7 @@ def encode(src: Path, dst: Path) -> None:
         raise SystemExit(f'Missing metadata file in directory {src}.')
 
     # Read the meta file
+    printv(f'Parsing directory {src}...')
     meta_data = json_load(meta_file)
     header = BinaryFileHeader.from_json(meta_data)
 
