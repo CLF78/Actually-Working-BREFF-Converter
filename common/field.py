@@ -199,7 +199,7 @@ class Structure(metaclass=StructureMeta):
 
             # Get the field data
             printv(f'Decoding field {name} (type {type(field).__name__})')
-            if getattr(field, 'unroll', False):
+            if (isinstance(field, StructField) and field.unroll) or isinstance(field, UnionField):
                 value = field.from_json(data, self)
             else:
                 value = field.from_json(data[snake_to_camel(name)], self)
@@ -430,6 +430,7 @@ class UnionField(Field):
     def detect_field(self, parent: Structure, is_json: bool) -> Field:
         selected_field = self.type_selector(parent, is_json)
         parent._fields_[self.private_name] = selected_field
+        selected_field.private_name = self.private_name
         return selected_field
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
@@ -443,7 +444,12 @@ class UnionField(Field):
     def from_json(self, value: Any, parent: Optional[Structure] = None) -> Any:
         if not parent:
             raise ValueError('A parent is required for decoding a UnionField!')
-        return self.detect_field(parent, True).from_json(value, parent)
+
+        field = self.detect_field(parent, True)
+        if isinstance(field, StructField) and field.unroll:
+            return field.from_json(value, parent)
+        else:
+            return field.from_json(value[snake_to_camel(self.private_name)], parent)
 
     def to_json(self, value: Any) -> Any:
         raise NotImplementedError('UnionField should not call to_json() directly; it must be replaced by the selected field.')

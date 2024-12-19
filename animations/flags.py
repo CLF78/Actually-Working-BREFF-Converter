@@ -301,11 +301,37 @@ def get_target_from_type(type: AnimType, kind_value: int) -> str:
             return target.name
     raise ValueError(f'Unknown target {kind_value} for animation type {type}')
 
+
 def get_sub_targets_from_type(type: AnimType, kind_value: int) -> IntFlag:
     for target, sub_targets in TargetTypeMap[type].items():
         if target == kind_value:
             return sub_targets
     raise ValueError(f'Unknown target {kind_value} for animation type {type}')
+
+
+def get_type_from_target(target_str: str) -> AnimType:
+    for type, targets in TargetTypeMap.items():
+        for target in targets:
+            if target.name == target_str:
+                return type
+    raise ValueError(f'Invalid target {target_str}')
+
+
+def get_kind_value_from_target(target_str: str) -> IntEnum:
+    for targets in TargetTypeMap.values():
+        for target in targets:
+            if target.name == target_str:
+                return target
+    raise ValueError(f'Invalid target {target_str}')
+
+
+def get_sub_targets_from_target(target_str: str) -> IntFlag:
+    for targets in TargetTypeMap.values():
+        for target, sub_targets in targets.items():
+            if target.name == target_str:
+                return sub_targets
+    raise ValueError(f'Invalid target {target_str}')
+
 
 def get_emitter_param_targets(shape: EmitterShape):
     return EmitterParamMap[shape]
