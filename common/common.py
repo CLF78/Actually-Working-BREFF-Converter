@@ -32,9 +32,10 @@ except ImportError:
 
 
 # Debug print helper
-def printv(*args, **kwargs):
+def printv(*arguments, **kwargs):
+    global args
     if args.verbose:
-        print(*args, **kwargs)
+        print(*arguments, **kwargs)
 
 
 # Aligns an integer to the given value
