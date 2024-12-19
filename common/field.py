@@ -197,7 +197,8 @@ class Structure(metaclass=StructureMeta):
             if field.cond and not field.cond(self, True):
                 continue
 
-            # Check if it's a nested structure
+            # Get the field data
+            printv(f'Decoding field {name} (type {type(field).__name__})')
             if getattr(field, 'unroll', False):
                 value = field.from_json(data, self)
             else:
