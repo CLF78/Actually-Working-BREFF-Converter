@@ -22,10 +22,12 @@ except ImportError:
     import json
 
     def json_dump(path: Path, data: dict) -> None:
-        json.dump(data, path, separators=(',', ': '), indent=2)
+        data = json.dumps(data, separators=(',', ': '), indent=2)
+        path.write_text(data, encoding='utf-8')
 
     def json_load(path: Path) -> dict:
-        return json.load(path)
+        data = path.read_text(encoding='utf-8')
+        return json.loads(data)
 
 
 # Aligns an integer to the given value
