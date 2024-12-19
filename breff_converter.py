@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from common.args import args
 from common.common import META_FILE, json_dump, json_load, printv
-from effect.effect import BinaryFileHeader, EffectTable, Effect
+from effect.effect import BinaryFileHeader, EffectTable, EffectTableEntry, Effect
 
 if sys.version_info < (3, 11):
     raise SystemExit('Please update your copy of Python to 3.11 or greater. Currently running on: ' + sys.version.split()[0])
@@ -60,10 +60,31 @@ def encode(src: Path, dst: Path) -> None:
     meta_data = json_load(meta_file)
     header = BinaryFileHeader.from_json(meta_data)
 
-    # TODO fill actual data in
-    header.block.project.project_data = b''
+    # Create the effect table
+    effect_table = EffectTable()
 
-    # Dump the data
+    # Parse each effect file
+    for file in src.glob('*.json'):
+
+        # Skip the meta file
+        if file == meta_file:
+            continue
+
+        # Create the effect and encode it
+        printv(f'Parsing {file}...')
+        effect_data = json_load(file)
+        effect = Effect.from_json(effect_data).to_bytes()
+
+        # Create the table entry
+        effect_table_entry = EffectTableEntry()
+        effect_table_entry.data = effect
+        effect_table_entry.name.name = file.stem
+        effect_table.entries.append(effect_table_entry)
+
+    # Encode the effect table and insert it into the project
+    header.block.project.project_data = effect_table.to_bytes()
+
+    # Write the file out
     dst.write_bytes(header.to_bytes())
 
 
