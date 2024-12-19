@@ -32,10 +32,13 @@ class AnimationHeader(Structure):
     def has_loop_count(self, is_json: bool) -> bool:
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
 
-    def get_sub_targets(self, _) -> Field:
+    def has_sub_targets(self, is_json: bool) -> bool:
+        return is_json and get_sub_targets_from_target(self.target) != AnimationSingleTarget
+
+    def get_sub_targets(self, is_json: bool) -> Field:
 
         # Get the target type
-        target = get_target_from_type(self.curve_type, self.kind_type)
+        target = self.target if is_json else get_target_from_type(self.curve_type, self.kind_type)
 
         # For emitter parameters, use the dedicated map
         if target == AnimTargetEmitterF32.EmitterParam.name:
@@ -43,20 +46,27 @@ class AnimationHeader(Structure):
             enum_type = get_emitter_param_targets(shape)
 
         # Else use the generic function
+        elif is_json:
+            enum_type = get_sub_targets_from_target(self.target)
         else:
             enum_type = get_sub_targets_from_type(self.curve_type, self.kind_type)
 
         # If only one target is available, skip the field when converting to JSON
         if enum_type is None or enum_type == AnimationSingleTarget:
-            return FlagEnumField(AnimationSingleTarget, cond=skip_json)
+            return FlagEnumField(AnimationSingleTarget, default=AnimationSingleTarget.T, cond=skip_json)
         else:
             return FlagEnumField(enum_type)
 
-    def get_anim_data(self, _) -> Field:
+    def get_anim_data(self, is_json: bool) -> Field:
 
         # Insert necessary data in the class
-        self.target = get_target_from_type(self.curve_type, self.kind_type)
-        self.is_baked = self.magic == 0xAB
+        if is_json:
+            self.magic = 0xAB if self.is_baked else 0xAC
+            self.curve_type = get_type_from_target(self.target)
+            self.kind_type = get_kind_value_from_target(self.target).value
+        else:
+            self.target = get_target_from_type(self.curve_type, self.kind_type)
+            self.is_baked = self.magic == 0xAB
 
         # Create the data
         match self.curve_type:
@@ -87,7 +97,7 @@ class AnimationHeader(Structure):
 
     # Stupid ass workaround for Python's inability to properly handle duplicate enum values
     target = string(cond=skip_binary)
-    sub_targets = UnionField(get_sub_targets)
+    sub_targets = UnionField(get_sub_targets, cond=has_sub_targets)
     is_init = boolean(cond=skip_binary)
     is_baked = boolean(cond=skip_binary)
 
