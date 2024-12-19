@@ -5,6 +5,7 @@
 
 from common.field import *
 from animations.header import AnimationHeader
+from animations.flags import AnimTargetEmitterF32
 
 class AnimationTable(Structure):
     anim_count = u16()
@@ -41,3 +42,31 @@ class Animations(Structure):
 
         # Serialize data
         return super().to_json()
+
+    def to_bytes(self) -> bytes:
+
+        # Distribute animations between the particle and emitter tables
+        for anim in self.animations:
+            if anim.target in AnimTargetEmitterF32.__members__.keys():
+                self.emitter_anims.append(anim)
+            else:
+                self.particle_anims.append(anim)
+
+        # Sort the tables to ensure init animations are placed first
+        self.particle_anims.sort(key=lambda x: x.is_init, reverse=True)
+        self.emitter_anims.sort(key=lambda x: x.is_init, reverse=True)
+
+        # Update particle animation counts
+        for anim in self.particle_anims:
+            self.particle_anim_table.anim_count += 1
+            if anim.is_init:
+                self.particle_anim_table.init_anim_count += 1
+
+        # Update emitter animation counts
+        for anim in self.emitter_anims:
+            self.emitter_anim_table.anim_count += 1
+            if anim.is_init:
+                self.emitter_anim_table.init_anim_count += 1
+
+        # Encode the result
+        return super().to_bytes()

@@ -44,10 +44,18 @@ class AnimationChildParam(Structure):
         self.name = get_anim_header(self).data.name_table.names[self.name_idx].name
         return super().to_json()
 
+    def to_bytes(self) -> bytes:
+        self.name_idx = get_anim_header(self).data.name_table.add_entry(self.name)
+        return super().to_bytes()
+
 
 # Used as part of the randomization algorithm, value is the index into the key list
 class AnimationChildRandomKey(Structure):
     idx = u16('H10x', cond=skip_json)
+
+    def to_bytes(self) -> bytes:
+        self.idx = self.get_parent(AnimationChild).frames.index(self.parent)
+        return super().to_bytes()
 
 
 class AnimationChildKeyFrame(KeyFrameBase):
@@ -79,3 +87,21 @@ class AnimationChild(Structure):
     random_table = StructField(AnimDataTable, cond=has_random_table)
     random_pool = ListField(StructField(AnimationChildParam), get_random_count, cond=has_random_pool)
     name_table = StructField(NameTable, alignment=4, cond=skip_json)
+
+    def to_bytes(self) -> bytes:
+
+        # Set key table length and size
+        anim_header = get_anim_header(self)
+        self.frame_table.entry_count = len(self.frames)
+        anim_header.key_table_size = self.size(AnimationChild.frame_table, AnimationChild.frames)
+
+        # Set random table length and size, if applicable
+        if self.random_pool:
+            self.random_table.entry_count = len(self.random_pool)
+            anim_header.random_table_size = self.size(AnimationChild.random_table, AnimationChild.random_pool)
+
+        # Set name table size
+        anim_header.name_table_size = self.size(AnimationChild.name_table, AnimationChild.name_table)
+
+        # Return result
+        return super().to_bytes()

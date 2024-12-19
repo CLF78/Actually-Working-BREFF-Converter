@@ -33,7 +33,7 @@ class AnimationHeader(Structure):
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
 
     def has_sub_targets(self, is_json: bool) -> bool:
-        return is_json and get_sub_targets_from_target(self.target) != AnimationSingleTarget
+        return not is_json or get_sub_targets_from_target(self.target) != AnimationSingleTarget
 
     def get_sub_targets(self, is_json: bool) -> Field:
 
@@ -62,8 +62,8 @@ class AnimationHeader(Structure):
         # Insert necessary data in the class
         if is_json:
             self.magic = 0xAB if self.is_baked else 0xAC
-            self.curve_type = get_type_from_target(self.target)
             self.kind_type = get_kind_value_from_target(self.target).value
+            self.curve_type = get_type_from_target(self.target)
         else:
             self.target = get_target_from_type(self.curve_type, self.kind_type)
             self.is_baked = self.magic == 0xAB
@@ -102,14 +102,26 @@ class AnimationHeader(Structure):
     is_baked = boolean(cond=skip_binary)
 
     process_flag = FlagEnumField(AnimProcessFlag)
-    loop_count = u8(cond=has_loop_count)
+    loop_count = u8(default=0, cond=has_loop_count)
     random_seed = u16()
     frame_count = u16('H2x', default=1, cond=has_frame_count)
 
-    key_table_size = u32(cond=skip_json)
-    range_table_size = u32(cond=skip_json)
-    random_table_size = u32(cond=skip_json)
-    name_table_size = u32(cond=skip_json)
-    info_table_size = u32(cond=skip_json)
+    key_table_size = u32(default=0, cond=skip_json)
+    range_table_size = u32(default=0, cond=skip_json)
+    random_table_size = u32(default=0, cond=skip_json)
+    name_table_size = u32(default=0, cond=skip_json)
+    info_table_size = u32(default=0, cond=skip_json)
 
     data = UnionField(get_anim_data)
+
+    def to_bytes(self) -> bytes:
+
+        # Temporarily disable data exporting to ensure the table sizes are updated correctly
+        # before the rest of the structure is encoded
+        self._fields_['data'].cond = skip_binary
+        data = self.data.to_bytes()
+        result = super().to_bytes()
+
+        # Restore field condition and return result
+        self._fields_['data'].cond = None
+        return result + data
