@@ -26,7 +26,7 @@ class AnimationRotateKeyRangeRandom(Structure):
 
 
 class AnimationRotateKey(KeyFrameBase):
-    def get_key_data(self) -> Field:
+    def get_key_data(self, _) -> Field:
         if self.value_type == KeyType.Fixed:
             return StructField(AnimationRotateKeyFixed, True)
         else:

@@ -27,7 +27,7 @@ class AnimationU8KeyRangeRandom(Structure):
 
 
 class AnimationU8Key(KeyFrameBase):
-    def get_key_data(self) -> Field:
+    def get_key_data(self, _) -> Field:
         if self.value_type == KeyType.Fixed:
             return StructField(AnimationU8KeyFixed, True)
         else:

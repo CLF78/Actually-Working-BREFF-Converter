@@ -76,7 +76,7 @@ class InfoFieldTail(Structure):
 
 
 class AnimationFieldInfo(Structure):
-    def get_field_info(self) -> Field:
+    def get_field_info(self, _) -> Field:
         match get_anim_header(self).target:
             case AnimTargetField.FieldGravity.name:
                 return StructField(InfoFieldGravity, unroll=True)
@@ -105,7 +105,7 @@ class AnimationField(Structure):
     def has_frames(self, _) -> bool:
         return get_anim_header(self).key_table_size != 0
 
-    def get_frame_format(self) -> Field:
+    def get_frame_format(self, _) -> Field:
         if get_anim_header(self).is_baked:
             return StructField(AnimationF32Baked, unroll=True)
         else:

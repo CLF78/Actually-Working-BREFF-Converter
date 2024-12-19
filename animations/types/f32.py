@@ -26,7 +26,7 @@ class AnimationF32KeyRangeRandom(Structure):
 
 
 class AnimationF32Key(KeyFrameBase):
-    def get_key_data(self) -> Field:
+    def get_key_data(self, _) -> Field:
         if self.value_type == KeyType.Fixed:
             return StructField(AnimationF32KeyFixed, True)
         else:

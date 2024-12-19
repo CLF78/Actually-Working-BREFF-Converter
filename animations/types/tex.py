@@ -40,7 +40,7 @@ class AnimationTexRangeRandomKey(Structure):
 
 
 class AnimationTexKey(KeyFrameBase):
-    def get_frame_data(self) -> Field:
+    def get_frame_data(self, _) -> Field:
         if self.value_type == KeyType.Random or self.value_type == KeyType.Range:
             return StructField(AnimationTexRangeRandomKey, True)
         else:

@@ -51,7 +51,7 @@ class AnimationChildRandomKey(Structure):
 
 
 class AnimationChildKeyFrame(KeyFrameBase):
-    def get_frame_data(self) -> Field:
+    def get_frame_data(self, _) -> Field:
         if self.value_type == KeyType.Random:
             return StructField(AnimationChildRandomKey, True)
         else:

@@ -23,7 +23,7 @@ FieldCondition = Callable[['Structure'], bool]
 FieldLength = int | F | Callable[['Structure'], int]
 
 # Function to determine the type of a field
-FieldTypeSelector = Callable[['Structure'], 'Field']
+FieldTypeSelector = Callable[['Structure', bool], 'Field']
 
 # Base cond functions
 def skip_json(structure: 'Structure', is_json: bool):
@@ -375,7 +375,7 @@ class EnumField(Field):
         return super().to_bytes(value.value)
 
     def from_json(self, value: str, parent: Optional[Structure] = None) -> IntEnum:
-        return self.enum_type[value & self.mask]
+        return self.enum_type[value] & self.mask
 
     def to_json(self, value: IntEnum) -> str:
         return value.name
@@ -387,7 +387,7 @@ class FlagEnumField(EnumField):
         super().__init__(enum_type, fmt, default, mask, **kwargs)
 
     def from_json(self, value: dict[str, bool], parent: Optional[Structure] = None) -> IntFlag:
-        result = self.enum_type(self.default)
+        result = self.enum_type(self.default if self.default else 0)
         for flag_name, is_set in value.items():
             if is_set:
                 result |= self.enum_type[camel_to_pascal(flag_name)]
@@ -427,15 +427,15 @@ class UnionField(Field):
         super().__init__('', default=None, **kwargs)
         self.type_selector = type_selector
 
-    def detect_field(self, parent: Structure) -> Field:
-        selected_field = self.type_selector(parent)
+    def detect_field(self, parent: Structure, is_json: bool) -> Field:
+        selected_field = self.type_selector(parent, is_json)
         parent._fields_[self.private_name] = selected_field
         return selected_field
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[Any, int]:
         if not parent:
             raise ValueError('A parent is required for decoding a UnionField!')
-        return self.detect_field(parent).from_bytes(data, offset, parent)
+        return self.detect_field(parent, False).from_bytes(data, offset, parent)
 
     def to_bytes(self, value: Any) -> bytes:
         raise NotImplementedError('UnionField should not call to_bytes() directly; it must be replaced by the selected field.')
@@ -443,7 +443,7 @@ class UnionField(Field):
     def from_json(self, value: Any, parent: Optional[Structure] = None) -> Any:
         if not parent:
             raise ValueError('A parent is required for decoding a UnionField!')
-        return self.detect_field(parent).from_json(value, parent)
+        return self.detect_field(parent, True).from_json(value, parent)
 
     def to_json(self, value: Any) -> Any:
         raise NotImplementedError('UnionField should not call to_json() directly; it must be replaced by the selected field.')
