@@ -61,7 +61,7 @@ class WrapOptions(IntFlag):
 
 
 class AnimationPostFieldInfo(Structure):
-    def get_shape_options(self) -> Field:
+    def get_shape_options(self, _) -> Field:
         match self.collision_shape:
             case CollisionShape.Plane | CollisionShape.Rectangle | CollisionShape.Circle:
                 return EnumField(CollisionShapeOptionsPlane)

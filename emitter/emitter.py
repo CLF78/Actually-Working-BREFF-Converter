@@ -16,7 +16,7 @@ from emitter.tev import TEVStages
 
 class EmitterData(Structure):
 
-    def get_emitter_params(self) -> Field:
+    def get_emitter_params(self, _) -> Field:
         match self.emitter_flags.shape:
             case EmitterShape.Point:
                 return padding(24)
@@ -30,7 +30,7 @@ class EmitterData(Structure):
                 return StructField(CylinderSphereTorusParams)
 
 
-    def get_options(self) -> Field:
+    def get_options(self, _) -> Field:
         match self.particle_type:
             case ParticleType.Billboard:
                 return StructField(BillboardOptions)

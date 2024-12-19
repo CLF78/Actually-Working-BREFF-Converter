@@ -32,7 +32,7 @@ class AnimationHeader(Structure):
     def has_loop_count(self, is_json: bool) -> bool:
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0
 
-    def get_sub_targets(self) -> Field:
+    def get_sub_targets(self, _) -> Field:
 
         # Get the target type
         target = get_target_from_type(self.curve_type, self.kind_type)
@@ -52,7 +52,7 @@ class AnimationHeader(Structure):
         else:
             return FlagEnumField(enum_type)
 
-    def get_anim_data(self) -> Field:
+    def get_anim_data(self, _) -> Field:
 
         # Insert necessary data in the class
         self.target = get_target_from_type(self.curve_type, self.kind_type)
@@ -103,4 +103,3 @@ class AnimationHeader(Structure):
     info_table_size = u32(cond=skip_json)
 
     data = UnionField(get_anim_data)
-
