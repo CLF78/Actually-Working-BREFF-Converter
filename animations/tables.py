@@ -49,6 +49,19 @@ class NameTable(AnimDataTable):
     names = ListField(StructField(NameString), AnimDataTable.entry_count)
 
     def to_bytes(self) -> bytes:
+        self.entry_count = len(self.names)
         self.name_ptrs = [0] * len(self.names)
-        self.name_table_size = len(self.names)
         return super().to_bytes()
+
+    def add_entry(self, entry_name: str) -> int:
+
+        # First check if it's already there
+        for i, name in enumerate(self.names):
+            if name.name == entry_name:
+                return i
+
+        # Else add it
+        new_entry = NameString(self)
+        new_entry.name = entry_name
+        self.names.append(new_entry)
+        return len(self.names) - 1

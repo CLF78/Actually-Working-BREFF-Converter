@@ -27,15 +27,38 @@ class EffectTableEntry(Structure):
         instance.data = EffectTableEntry.data.from_bytes(data, instance.data_offset, instance)[0]
         return instance, offset
 
-    def to_bytes(self) -> bytes:
-        self.data_size = len(self.data)
-        return super().to_bytes()
-
 
 class EffectTable(Structure):
     table_size = u32()
     entry_count = u16('H2x')
     entries = ListField(StructField(EffectTableEntry), entry_count)
+
+    def to_bytes(self) -> bytes:
+
+        # Get entries
+        entries: list[EffectTableEntry] = self.entries
+
+        # Calculate table size and entry count
+        self.table_size = 0
+        self.entry_count = 0
+        for entry in entries:
+            self.entry_count += 1
+            self.table_size += entry.size(end_field=EffectTableEntry.data_size)
+            entry.data_size = len(entry.data)
+
+        # Assign data offsets
+        data_offset = self.table_size
+        for entry in entries:
+            entry.data_offset = data_offset
+            data_offset += entry.data_size
+
+        # Encode result
+        result = super().to_bytes()
+
+        # Append effect data for each entry
+        for entry in entries:
+            result += entry.data
+        return result
 
 
 class EffectProject(Structure):

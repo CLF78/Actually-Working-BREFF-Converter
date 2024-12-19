@@ -192,3 +192,8 @@ class EmitterData(Structure):
 
     # Z Offset
     z_offset = f32()
+
+
+    def to_bytes(self) -> bytes:
+        self.data_size = self.size()
+        return super().to_bytes()

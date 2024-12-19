@@ -27,3 +27,8 @@ class ParticleData(Structure):
 
     # Mostly texture-specific data
     textures = StructField(ParticleTextures, True, alignment=4)
+
+
+    def to_bytes(self) -> bytes:
+        self.data_size = self.size()
+        return super().to_bytes()
