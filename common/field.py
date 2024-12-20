@@ -193,16 +193,14 @@ class Structure(metaclass=StructureMeta):
         fields: FieldDict = self._fields_
         for name, field in fields.items():
 
-            # Skip field if cond does not match
-            if field.cond and not field.cond(self, True):
-                continue
-
-            # Get the field data
+            # Ignore conditions in this case so we can properly detect every available field
             printv(f'Decoding field {name} (type {type(field).__name__})')
             if (isinstance(field, StructField) and field.unroll) or isinstance(field, UnionField):
                 value = field.from_json(data, self)
+            elif (key := snake_to_camel(name)) in data:
+                value = field.from_json(data[key], self)
             else:
-                value = field.from_json(data[snake_to_camel(name)], self)
+                value = None
 
             # Set the value
             setattr(self, name, value)
@@ -448,8 +446,10 @@ class UnionField(Field):
         field = self.detect_field(parent, True)
         if isinstance(field, StructField) and field.unroll:
             return field.from_json(value, parent)
+        elif (key := snake_to_camel(self.private_name)) in value:
+            return field.from_json(value[key], self)
         else:
-            return field.from_json(value[snake_to_camel(self.private_name)], parent)
+            return None
 
     def to_json(self, value: Any) -> Any:
         raise NotImplementedError('UnionField should not call to_json() directly; it must be replaced by the selected field.')
