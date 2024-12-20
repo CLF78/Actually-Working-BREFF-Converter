@@ -102,11 +102,8 @@ class AnimationFieldInfo(Structure):
 
 
 class AnimationField(Structure):
-    def has_frames(self, is_json: bool) -> bool:
-        if is_json:
-            return get_anim_header(self).sub_targets.value != 0
-        else:
-            return get_anim_header(self).key_table_size != 0
+    def has_frames(self, _) -> bool:
+        return get_anim_header(self).sub_targets.value != 0
 
     def get_frame_format(self, _) -> Field:
         if get_anim_header(self).is_baked:

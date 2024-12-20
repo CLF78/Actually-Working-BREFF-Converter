@@ -62,3 +62,24 @@ class AnimationU8Baked(Structure):
 
         # Let the parser do the rest
         return super().to_json()
+
+    def to_bytes(self) -> bytes:
+
+        # Get the enabled targets
+        sub_targets = get_anim_header(self).sub_targets
+
+        # Parse each frame
+        for frame in self.frames:
+
+            # Parse the enabled targets
+            key = AnimationU8BakedKey(self)
+            for target in sub_targets:
+                value = getattr(frame, pascal_to_snake(target.name))
+                key.values.append(value)
+
+            # Add the parsed frame to the list
+            self.keys.append(key)
+
+        # Calculate key table size and encode the result
+        get_anim_header(self).key_table_size = self.size()
+        return super().to_bytes()

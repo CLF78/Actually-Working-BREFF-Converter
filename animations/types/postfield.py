@@ -68,7 +68,7 @@ class AnimationPostFieldInfo(Structure):
             case CollisionShape.Sphere:
                 return EnumField(CollisionShapeOptionsSphere)
             case _:
-                return u8(cond=skip_json)
+                return u8(default=0, cond=skip_json)
 
     def has_child_info(self, is_json: bool) -> bool:
         return not is_json or get_anim_header(self).name_table_size != 0
@@ -93,7 +93,7 @@ class AnimationPostFieldInfo(Structure):
 
 class AnimationPostField(Structure):
     def has_frames(self, _) -> bool:
-        return get_anim_header(self).key_table_size != 0
+        return get_anim_header(self).sub_targets.value != 0
 
     def has_name_table(self, is_json: bool) -> bool:
         return not is_json and get_anim_header(self).name_table_size != 0
