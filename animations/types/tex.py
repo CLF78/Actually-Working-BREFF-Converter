@@ -34,6 +34,20 @@ class AnimationTexParam(Structure):
         self.wrapT = GXTexWrapMode((self.wrap >> 2) & 3)
         return super().to_json()
 
+    def to_bytes(self) -> bytes:
+        self.name_idx = self.get_parent(AnimationTex).name_table.add_entry(self.texture_name)
+        self.wrap = self.wrapS.value | (self.wrapT.value << 2)
+        return super().to_bytes()
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.texture_name == other.texture_name and \
+                   self.wrapS == other.wrapS and \
+                   self.wrapT == other.wrapT and \
+                   self.reverse_mode == other.reverse_mode
+        else:
+            return False
+
 
 class AnimationTexRangeRandomKey(Structure):
     idx = u16('H2x')
@@ -55,6 +69,11 @@ class AnimationTexRange(Structure):
     flip_random = FlagEnumField(FlipRandom)
     padd = padding(3)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.param == other.param and self.flip_random == other.flip_random
+        else:
+            return False
 
 ##################
 # Parsed Formats #
@@ -125,3 +144,71 @@ class AnimationTex(Structure):
 
         # Let the parser do the rest
         return super().to_json()
+
+
+    def to_bytes(self) -> bytes:
+
+        # Iterate frames
+        for i, frame in enumerate(self.frames):
+
+            # Create key and copy basic info
+            key = AnimationTexKey(self)
+            key.frame = frame.frame
+            key.value_type = frame.value_type
+
+            # Detect key format
+            AnimationTexKey.data.detect_field(key, False)
+
+            # Fixed frame
+            if key.value_type == KeyType.Fixed:
+                key.data = frame.data
+
+            # Range frame
+            elif key.value_type == KeyType.Range:
+                range_entry = AnimationTexRange(self)
+                range_entry.param = frame.data
+                range_entry.flip_random = frame.flip_random
+                key.data = AnimationTexRangeRandomKey(key)
+                key.data.idx = self.add_range(range_entry)
+
+            # Random frame
+            else:
+                key.data = AnimationTexRangeRandomKey(key)
+                key.data.idx = i
+
+            # Append new key
+            self.keys.append(key)
+
+        # Calculate the key table length and size
+        anim_header = get_anim_header(self)
+        self.key_table.entry_count = len(self.keys)
+        anim_header.key_table_size = self.size(AnimationTex.key_table, AnimationTex.keys)
+
+        # Calculate the range table length and size (if applicable)
+        if self.ranges:
+            self.range_table.entry_count = len(self.ranges)
+            anim_header.range_table_size = self.size(AnimationTex.range_table, AnimationTex.ranges)
+        else:
+            anim_header.range_table_size = 0
+
+        # Calculate the random table length and size (if applicable)
+        if self.random_pool:
+            self.random_table.entry_count = len(self.random_pool)
+            anim_header.random_table_size = self.size(AnimationTex.random_table, AnimationTex.random_pool)
+        else:
+            anim_header.random_table_size = 0
+
+        # Encode result (automatically updates name table)
+        result = super().to_bytes()
+
+        # Calculate name table size and return encoded data
+        anim_header.name_table_size = self.size(AnimationTex.name_table, AnimationTex.name_table)
+        return result
+
+    def add_range(self, new_range: AnimationTexRange) -> int:
+        for i, range in enumerate(self.ranges):
+            if new_range == range:
+                return i
+
+        self.ranges.append(new_range)
+        return len(self.ranges) - 1

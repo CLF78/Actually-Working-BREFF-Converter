@@ -194,7 +194,7 @@ class Structure(metaclass=StructureMeta):
         for name, field in fields.items():
 
             # Ignore conditions in this case so we can properly detect every available field
-            printv(f'Decoding field {name} (type {type(field).__name__})')
+            printv(f'Encoding field {name} (type {type(field).__name__})')
             if (isinstance(field, StructField) and field.unroll) or isinstance(field, UnionField):
                 value = field.from_json(data, self)
             elif (key := snake_to_camel(name)) in data:
