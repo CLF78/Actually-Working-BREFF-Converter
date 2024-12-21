@@ -169,7 +169,8 @@ class AnimationU8(Structure):
     def to_bytes(self) -> bytes:
 
         # Get the enabled targets
-        sub_targets = get_anim_header(self).sub_targets
+        anim_header = get_anim_header(self)
+        sub_targets = anim_header.sub_targets
 
         # Parse the individual frames
         for i, frame in enumerate(self.key_frames):
@@ -178,7 +179,7 @@ class AnimationU8(Structure):
             key = AnimationU8Key(self)
             key.frame = frame.frame
             key.value_type = frame.value_type
-            key.curve_types = [KeyCurveType.Linear for _ in range(8)] # Default values
+            key.curve_types = [KeyCurveType.Linear] * 8  # Default values
 
             # Detect the key format
             AnimationU8Key.key_data.detect_field(key, False)
@@ -233,7 +234,6 @@ class AnimationU8(Structure):
             self.random_values.append(random)
 
         # Calculate the key table length and size
-        anim_header = get_anim_header(self)
         self.frame_table.entry_count = len(self.frames)
         anim_header.key_table_size = self.size(AnimationU8.frame_table, AnimationU8.frames)
 

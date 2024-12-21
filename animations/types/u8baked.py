@@ -66,7 +66,8 @@ class AnimationU8Baked(Structure):
     def to_bytes(self) -> bytes:
 
         # Get the enabled targets
-        sub_targets = get_anim_header(self).sub_targets
+        anim_header = get_anim_header(self)
+        sub_targets = anim_header.sub_targets
 
         # Parse each frame
         for frame in self.frames:
@@ -81,5 +82,6 @@ class AnimationU8Baked(Structure):
             self.keys.append(key)
 
         # Calculate key table size and encode the result
-        get_anim_header(self).key_table_size = self.size()
+        anim_header.frame_count = len(self.keys)
+        anim_header.key_table_size = self.size()
         return super().to_bytes()

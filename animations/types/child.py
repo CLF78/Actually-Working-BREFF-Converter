@@ -95,13 +95,12 @@ class AnimationChild(Structure):
         self.frame_table.entry_count = len(self.frames)
         anim_header.key_table_size = self.size(AnimationChild.frame_table, AnimationChild.frames)
 
-        # Set random table length and size, if applicable
+        # Set random table length and size (if applicable)
         if self.random_pool:
             self.random_table.entry_count = len(self.random_pool)
             anim_header.random_table_size = self.size(AnimationChild.random_table, AnimationChild.random_pool)
 
-        # Set name table size
+        # Encode data, set name table size and return result
+        result = super().to_bytes()
         anim_header.name_table_size = self.size(AnimationChild.name_table, AnimationChild.name_table)
-
-        # Return result
-        return super().to_bytes()
+        return result

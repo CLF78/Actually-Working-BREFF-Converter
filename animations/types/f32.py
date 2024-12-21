@@ -390,16 +390,17 @@ class AnimationF32(Structure):
     def to_bytes(self) -> bytes:
 
         # Get the enabled targets
-        sub_targets = get_anim_header(self).sub_targets
+        anim_header = get_anim_header(self)
+        sub_targets = anim_header.sub_targets
 
         # Parse the individual frames
         for i, frame in enumerate(self.key_frames):
 
-            # Copy the basic info
+            # Create the key and copy the basic info
             key = AnimationF32Key(self)
             key.frame = frame.frame
             key.value_type = frame.value_type
-            key.curve_types = [KeyCurveType.Linear for _ in range(8)] # Default values
+            key.curve_types = [KeyCurveType.Linear] * 8  # Default values
 
             # Detect the key format
             AnimationF32Key.key_data.detect_field(key, False)
@@ -455,7 +456,6 @@ class AnimationF32(Structure):
             self.random_values.append(random)
 
         # Calculate the key table length and size
-        anim_header = get_anim_header(self)
         self.frame_table.entry_count = len(self.frames)
         anim_header.key_table_size = self.size(AnimationF32.frame_table, AnimationF32.frames)
 
