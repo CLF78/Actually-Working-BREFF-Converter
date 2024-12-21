@@ -445,7 +445,7 @@ class AnimationF32(Structure):
 
             # Insert the data and add the key to the list
             key.key_data = data
-            self.keys.append(key)
+            self.frames.append(key)
 
         # Fill the random pool if not empty
         for entry in self.random_pool:
