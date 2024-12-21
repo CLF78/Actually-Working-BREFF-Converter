@@ -181,3 +181,104 @@ class AnimationRotate(Structure):
 
         # Let the parser do the rest
         return super().to_json()
+
+    def to_bytes(self) -> bytes:
+
+        # Get the enabled targets
+        anim_header = get_anim_header(self)
+        sub_targets = anim_header.sub_targets
+
+        # Parse the individual frames
+        for i, frame in enumerate(self.key_frames):
+
+            # Create the key and copy the basic info
+            key = AnimationRotateKey(self)
+            key.frame = frame.frame
+            key.value_type = frame.value_type
+            key.curve_types = [KeyCurveType.Linear] * 8  # Default values
+
+            # Detect the key format
+            AnimationRotateKey.key_data.detect_field(key, False)
+
+            # Fixed frame
+            if key.value_type == KeyType.Fixed:
+                data = AnimationRotateKeyFixed(key)
+
+                # Combine the values and interpolation types
+                for _, target_name, target_value in get_enabled_targets(sub_targets):
+                    target: AnimationRotateTarget = getattr(frame, pascal_to_snake(target_name))
+                    data.values.append(target.value)
+                    key.curve_types[target_value.bit_length() - 1] = target.interpolation
+
+            # Range frame
+            elif key.value_type == KeyType.Range:
+
+                # Create data structures
+                data = AnimationRotateKeyRangeRandom(key)
+                range = AnimationRotateRanges(self)
+                range.random_rotation_direction = frame.random_rotation_direction
+
+                # Combine the range values and interpolation types
+                for _, target_name, target_value in get_enabled_targets(sub_targets):
+                    target: AnimationRotateTarget = getattr(frame, pascal_to_snake(target_name))
+                    key.curve_types[target_value.bit_length() - 1] = target.interpolation
+                    range.values += target.range
+
+                # Get the index in the range table and fill the padding
+                data.idx = self.add_range(range)
+                data.padd = [0] * data.get_padding()
+
+            # Random frame
+            else:
+                data = AnimationRotateKeyRangeRandom(key)
+
+                # Get the index in the key table and fill the padding
+                data.idx = i
+                data.padd = [0] * data.get_padding()
+
+                # Fill curve types
+                for _, target_name, target_value in get_enabled_targets(sub_targets):
+                    target: AnimationRotateTarget = getattr(frame, pascal_to_snake(target_name))
+                    key.curve_types[target_value.bit_length() - 1] = target.interpolation
+
+            # Insert the data and add the key to the list
+            key.key_data = data
+            self.keys.append(key)
+
+        # Fill the random pool if not empty
+        for entry in self.random_pool:
+            random = AnimationRotateRanges(self)
+            random.random_rotation_direction = entry.random_rotation_direction
+            for target in sub_targets:
+                target: list = getattr(entry, pascal_to_snake(target.name))
+                random.values += target
+            self.random_values.append(random)
+
+        # Calculate the key table length and size
+        self.frame_table.entry_count = len(self.frames)
+        anim_header.key_table_size = self.size(AnimationRotate.frame_table, AnimationRotate.frames)
+
+        # Calculate the range table length and size (if applicable)
+        if self.range_values:
+            self.range_table.entry_count = len(self.range_values)
+            anim_header.range_table_size = self.size(AnimationRotate.range_table, AnimationRotate.range_values)
+        else:
+            anim_header.range_table_size = 0
+
+        # Calculate the random table length and size (if applicable)
+        if self.random_values:
+            self.random_table.entry_count = len(self.random_values)
+            anim_header.random_table_size = self.size(AnimationRotate.random_table, AnimationRotate.random_values)
+        else:
+            anim_header.random_table_size = 0
+
+        # Encode everything
+        return super().to_bytes()
+
+    def add_range(self, range: AnimationRotateRanges) -> int:
+        for i, entry in enumerate(self.range_values):
+            if range.values == entry.values and range.random_rotation_direction == entry.random_rotation_direction:
+                return i
+
+        self.range_values.append(range)
+        return len(self.range_values) - 1
