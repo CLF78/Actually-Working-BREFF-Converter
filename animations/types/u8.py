@@ -3,7 +3,6 @@
 # u8.py
 # Particle U8 animation definitions
 
-from typing import Any
 from common.common import pascal_to_snake
 from common.field import *
 from animations.common import *
@@ -95,7 +94,6 @@ class AnimationU8RandomPoolEntry(Structure):
 ###############
 
 class AnimationU8(Structure):
-
     def get_key_count(self) -> int:
         return self.frame_table.entry_count
 
@@ -122,7 +120,7 @@ class AnimationU8(Structure):
     random_values = ListField(StructField(AnimationU8Ranges), get_random_count, cond=has_random_table, alignment=4)
     random_pool = ListField(StructField(AnimationU8RandomPoolEntry, True), cond=skip_binary) # Parsed version
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
 
         # Parse each frame
         sub_targets = get_anim_header(self).sub_targets
@@ -163,10 +161,10 @@ class AnimationU8(Structure):
             # Add the new entry
             self.random_pool.append(pool_entry)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Get the enabled targets
         anim_header = get_anim_header(self)
@@ -241,18 +239,14 @@ class AnimationU8(Structure):
         if self.range_values:
             self.range_table.entry_count = len(self.range_values)
             anim_header.range_table_size = self.size(AnimationU8.range_table, AnimationU8.range_values)
-        else:
-            anim_header.range_table_size = 0
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
             self.random_table.entry_count = len(self.random_values)
             anim_header.random_table_size = self.size(AnimationU8.random_table, AnimationU8.random_values)
-        else:
-            anim_header.random_table_size = 0
 
-        # Encode everything
-        return super().to_bytes()
+        # Do encoding
+        super().encode()
 
     def add_range(self, range: AnimationU8Ranges) -> int:
         for i, entry in enumerate(self.range_values):

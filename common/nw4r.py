@@ -16,19 +16,10 @@ class VEC3(Structure):
     z = f32()
 
 
-class MTX23(Structure):
-    _00 = f32()
-    _01 = f32()
-    _02 = f32()
-    _10 = f32()
-    _11 = f32()
-    _12 = f32()
-
-
 class NameString(Structure):
     name_len = u16(cond=skip_json)
     name = string()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.name_len = len(self.name) + 1
-        return super().to_bytes()
+        super().encode()

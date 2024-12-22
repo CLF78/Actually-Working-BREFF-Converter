@@ -216,4 +216,4 @@ class GXColor(Structure):
 	r = u8()
 	g = u8()
 	b = u8()
-	a = u8(default=0xFF)
+	a = u8()

@@ -3,7 +3,6 @@
 # u8baked.py
 # Particle U8 baked animation definitions
 
-from typing import Any
 from common.common import pascal_to_snake
 from common.field import *
 from animations.common import *
@@ -46,7 +45,7 @@ class AnimationU8Baked(Structure):
     keys = ListField(StructField(AnimationU8BakedKey), get_key_count, alignment=4, cond=skip_json)
     frames = ListField(StructField(AnimationU8BakedFrame, unroll=True), cond=skip_binary) # Parsed version
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
 
         # Parse each frame
         sub_targets = get_anim_header(self).sub_targets
@@ -60,10 +59,10 @@ class AnimationU8Baked(Structure):
             # Add the parsed frame to the list
             self.frames.append(parsed_frame)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Get the enabled targets
         anim_header = get_anim_header(self)
@@ -81,7 +80,9 @@ class AnimationU8Baked(Structure):
             # Add the parsed frame to the list
             self.keys.append(key)
 
-        # Calculate key table size and encode the result
+        # Calculate key table length and size
         anim_header.frame_count = len(self.keys)
         anim_header.key_table_size = self.size()
-        return super().to_bytes()
+
+        # Do encoding
+        super().encode()

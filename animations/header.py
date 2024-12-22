@@ -113,15 +113,3 @@ class AnimationHeader(Structure):
     info_table_size = u32(default=0, cond=skip_json)
 
     data = UnionField(get_anim_data)
-
-    def to_bytes(self) -> bytes:
-
-        # Temporarily disable data exporting to ensure the table sizes are updated correctly
-        # before the rest of the structure is encoded
-        self._fields_['data'].cond = skip_binary
-        data = self.data.to_bytes()
-        result = super().to_bytes()
-
-        # Restore field condition and return result
-        self._fields_['data'].cond = None
-        return result + data

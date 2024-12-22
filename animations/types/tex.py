@@ -4,7 +4,6 @@
 # Particle texture animation definitions
 
 from enum import IntFlag
-from typing import Any
 from common.field import *
 from common.gx import GXTexWrapMode
 from animations.common import *
@@ -28,16 +27,16 @@ class AnimationTexParam(Structure):
     reverse_mode = EnumField(ReverseMode)
     name_idx = u16(cond=skip_json)
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
         self.texture_name = self.get_parent(AnimationTex).name_table.names[self.name_idx].name
         self.wrapS = GXTexWrapMode(self.wrap & 3)
         self.wrapT = GXTexWrapMode((self.wrap >> 2) & 3)
-        return super().to_json()
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.name_idx = self.get_parent(AnimationTex).name_table.add_entry(self.texture_name)
         self.wrap = self.wrapS.value | (self.wrapT.value << 2)
-        return super().to_bytes()
+        super().encode()
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -121,7 +120,7 @@ class AnimationTex(Structure):
 
     name_table = StructField(NameTable, alignment=4, cond=skip_json)
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
 
         # Parse each key
         for key in self.keys:
@@ -142,11 +141,10 @@ class AnimationTex(Structure):
             # Append frame
             self.frames.append(parsed_frame)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Iterate frames
         for i, frame in enumerate(self.frames):
@@ -188,22 +186,18 @@ class AnimationTex(Structure):
         if self.ranges:
             self.range_table.entry_count = len(self.ranges)
             anim_header.range_table_size = self.size(AnimationTex.range_table, AnimationTex.ranges)
-        else:
-            anim_header.range_table_size = 0
 
         # Calculate the random table length and size (if applicable)
         if self.random_pool:
             self.random_table.entry_count = len(self.random_pool)
             anim_header.random_table_size = self.size(AnimationTex.random_table, AnimationTex.random_pool)
-        else:
-            anim_header.random_table_size = 0
 
-        # Encode result (automatically updates name table)
-        result = super().to_bytes()
-
-        # Calculate name table size and return encoded data
+        # Encode name table and calculate its size
+        self.name_table.encode()
         anim_header.name_table_size = self.size(AnimationTex.name_table, AnimationTex.name_table)
-        return result
+
+        # Do encoding
+        super().encode()
 
     def add_range(self, new_range: AnimationTexRange) -> int:
         for i, range in enumerate(self.ranges):

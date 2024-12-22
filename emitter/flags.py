@@ -90,10 +90,6 @@ class EmitterFlags(Structure):
         # Return data
         return data
 
-    def to_bytes(self) -> bytes:
-
-        # Remove all flags that are not allowed
-        self.type_specific_flags &= self.get_allowed_flags()
-
-        # Return data
-        return super().to_bytes()
+    def encode(self) -> None:
+        self.type_specific_flags &= self.get_allowed_flags() # Remove all flags that are not allowed
+        super().encode()

@@ -48,10 +48,10 @@ class NameTable(AnimDataTable):
     name_ptrs = ListField(u32(), AnimDataTable.entry_count)
     names = ListField(StructField(NameString), AnimDataTable.entry_count)
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.entry_count = len(self.names)
         self.name_ptrs = [0] * len(self.names)
-        return super().to_bytes()
+        super().encode()
 
     def add_entry(self, entry_name: str) -> int:
 

@@ -7,33 +7,33 @@ from common.field import *
 from common.gx import *
 
 class TEVStageColor(Structure):
-    color_selection_a = EnumField(GXTevColorArg)
-    color_selection_b = EnumField(GXTevColorArg)
-    color_selection_c = EnumField(GXTevColorArg)
-    color_selection_d = EnumField(GXTevColorArg)
+    color_selection_a = EnumField(GXTevColorArg, default=GXTevColorArg.OutputColor)
+    color_selection_b = EnumField(GXTevColorArg, default=GXTevColorArg.OutputColor)
+    color_selection_c = EnumField(GXTevColorArg, default=GXTevColorArg.OutputColor)
+    color_selection_d = EnumField(GXTevColorArg, default=GXTevColorArg.OutputColor)
 
 
 class TEVStageColorOp(Structure):
-    color_operation = EnumField(GXTevOp)
-    color_bias = EnumField(GXTevBias)
-    color_scale = EnumField(GXTevScale)
-    color_clamp = boolean()
-    color_register = EnumField(GXTevRegID)
+    color_operation = EnumField(GXTevOp, default=GXTevOp.Add)
+    color_bias = EnumField(GXTevBias, default=GXTevBias.Zero)
+    color_scale = EnumField(GXTevScale, default=GXTevScale.MultiplyBy1)
+    color_clamp = boolean(default=False)
+    color_register = EnumField(GXTevRegID, default=GXTevRegID.OutputColor)
 
 
 class TEVStageAlphaOp(Structure):
-    alpha_operation = EnumField(GXTevOpAlpha)
-    alpha_bias = EnumField(GXTevBias)
-    alpha_scale = EnumField(GXTevScale)
-    alpha_clamp = boolean()
-    alpha_register = EnumField(GXTevRegIDAlpha)
+    alpha_operation = EnumField(GXTevOpAlpha, default=GXTevOpAlpha.Add)
+    alpha_bias = EnumField(GXTevBias, default=GXTevBias.Zero)
+    alpha_scale = EnumField(GXTevScale, default=GXTevScale.MultiplyBy1)
+    alpha_clamp = boolean(default=False)
+    alpha_register = EnumField(GXTevRegIDAlpha, default=GXTevRegIDAlpha.OutputAlpha)
 
 
 class TEVStageAlpha(Structure):
-    alpha_selection_a = EnumField(GXTevAlphaArg)
-    alpha_selection_b = EnumField(GXTevAlphaArg)
-    alpha_selection_c = EnumField(GXTevAlphaArg)
-    alpha_selection_d = EnumField(GXTevAlphaArg)
+    alpha_selection_a = EnumField(GXTevAlphaArg, default=GXTevAlphaArg.OutputAlpha)
+    alpha_selection_b = EnumField(GXTevAlphaArg, default=GXTevAlphaArg.OutputAlpha)
+    alpha_selection_c = EnumField(GXTevAlphaArg, default=GXTevAlphaArg.OutputAlpha)
+    alpha_selection_d = EnumField(GXTevAlphaArg, default=GXTevAlphaArg.OutputAlpha)
 
 
 class TEVStage(Structure):
@@ -81,7 +81,7 @@ class TEVStages(Structure):
     # Parsed TEV stages
     tev_stages = ListField(StructField(TEVStage), cond=skip_binary) # Handled manually
 
-    def to_json(self) -> dict:
+    def decode(self) -> None:
 
         # Parse each stage
         for i in range(self.num_tev_stages):
@@ -95,12 +95,13 @@ class TEVStages(Structure):
             stage.constant_alpha_selection = self.kalphas[i]
             self.tev_stages.append(stage)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
-        # Set value
+        # Set number of TEV stages and cut the list if it exceeds the maximum value
+        self.tev_stages = self.tev_stages[:4]
         self.num_tev_stages = len(self.tev_stages)
 
         # Unpack each stage into the fields
@@ -113,5 +114,15 @@ class TEVStages(Structure):
             self.kcolors.append(data.constant_color_selection)
             self.kalphas.append(data.constant_alpha_selection)
 
-        # Let the parser do the rest
-        return super().to_bytes()
+        # Fill the remaining slots with dummy data
+        for _ in range(len(self.tev_stages), 4):
+            self.textures.append(0)
+            self.colors.append(TEVStageColor(self))
+            self.colorops.append(TEVStageColorOp(self))
+            self.alphas.append(TEVStageAlpha(self))
+            self.alphaops.append(TEVStageAlphaOp(self))
+            self.kcolors.append(GXTevKColorSel.Constant1_1)
+            self.kalphas.append(GXTevKAlphaSel.Constant1_1)
+
+        # Do encoding
+        super().encode()

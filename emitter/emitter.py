@@ -5,7 +5,7 @@
 
 from common.field import *
 from common.gx import *
-from common.nw4r import VEC3, MTX23
+from common.nw4r import VEC3
 from emitter.alpha_swing import AlphaSwing
 from emitter.color_input import ColorInput
 from emitter.flags import CommonFlag, DrawFlag, EmitterFlags, EmitterShape
@@ -45,7 +45,7 @@ class EmitterData(Structure):
 
 
     # Size of emitter
-    data_size = u32('4xI', cond=skip_json)
+    data_size = u32('4xI', default=0x14C, cond=skip_json)
 
     # Various flags
     common_flags = FlagEnumField(CommonFlag, 'I')
@@ -179,7 +179,7 @@ class EmitterData(Structure):
     lighting = StructField(Lighting)
 
     # Indirect texture matrix and scale
-    indirect_texture_matrix = StructField(MTX23)
+    indirect_texture_matrix = ListField(f32(), 6)
     indirect_texture_scale = s8()
 
     # Pivots
@@ -192,8 +192,3 @@ class EmitterData(Structure):
 
     # Z Offset
     z_offset = f32()
-
-
-    def to_bytes(self) -> bytes:
-        self.data_size = self.size()
-        return super().to_bytes()

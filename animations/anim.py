@@ -8,10 +8,14 @@ from animations.header import AnimationHeader
 from animations.flags import AnimTargetEmitterF32
 
 class AnimationTable(Structure):
-    anim_count = u16()
-    init_anim_count = u16()
+    anim_count = u16(default=0)
+    init_anim_count = u16(default=0)
     anim_ptrs = ListField(u32(), anim_count)
     anim_sizes = ListField(u32(), anim_count)
+
+    def encode(self) -> None:
+        self.anim_ptrs = [0] * self.anim_count
+        super().encode()
 
 
 class Animations(Structure):
@@ -27,7 +31,7 @@ class Animations(Structure):
     emitter_anims = ListField(StructField(AnimationHeader), get_emitter_anim_count, cond=skip_json)
     animations = ListField(StructField(AnimationHeader), cond=skip_binary)
 
-    def to_json(self) -> dict:
+    def decode(self) -> None:
 
         # Mark animations that need to run on frame 0 only
         for i, anim in enumerate(self.particle_anims):
@@ -37,16 +41,19 @@ class Animations(Structure):
         for i, anim in enumerate(self.emitter_anims):
             anim.is_init = i < self.emitter_anim_table.init_anim_count
 
-        # Merge animation lists
+        # Merge animation lists and decode result
         self.animations = self.particle_anims + self.emitter_anims
+        super().decode()
 
-        # Serialize data
-        return super().to_json()
+    def encode(self) -> None:
 
-    def to_bytes(self) -> bytes:
+        # Create tables
+        self.particle_anim_table = AnimationTable(self)
+        self.emitter_anim_table = AnimationTable(self)
 
-        # Distribute animations between the particle and emitter tables
+        # Encode animations and distribute them between the particle and emitter tables
         for anim in self.animations:
+            anim.encode()
             if anim.target in AnimTargetEmitterF32.__members__.keys():
                 self.emitter_anims.append(anim)
             else:
@@ -59,14 +66,17 @@ class Animations(Structure):
         # Update particle animation counts
         for anim in self.particle_anims:
             self.particle_anim_table.anim_count += 1
+            self.particle_anim_table.anim_sizes.append(anim.size())
             if anim.is_init:
                 self.particle_anim_table.init_anim_count += 1
 
         # Update emitter animation counts
         for anim in self.emitter_anims:
             self.emitter_anim_table.anim_count += 1
+            self.emitter_anim_table.anim_sizes.append(anim.size())
             if anim.is_init:
                 self.emitter_anim_table.init_anim_count += 1
 
-        # Encode the result
-        return super().to_bytes()
+        # Encode the tables
+        self.particle_anim_table.encode()
+        self.emitter_anim_table.encode()
