@@ -3,7 +3,6 @@
 # rotate.py
 # Particle rotation animation definitions
 
-from typing import Any
 from common.common import pascal_to_snake
 from common.field import *
 from animations.common import *
@@ -104,7 +103,6 @@ class AnimationRotateRandomPoolEntry(Structure):
 ###############
 
 class AnimationRotate(Structure):
-
     def get_key_count(self) -> int:
         return self.frame_table.entry_count
 
@@ -131,7 +129,7 @@ class AnimationRotate(Structure):
     random_values = ListField(StructField(AnimationRotateRanges), get_random_count, cond=has_random_table)
     random_pool = ListField(StructField(AnimationRotateRandomPoolEntry, True), cond=skip_binary) # Parsed version
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
 
         # Get targets
         sub_targets = get_anim_header(self).sub_targets
@@ -179,10 +177,10 @@ class AnimationRotate(Structure):
             # Add the new entry
             self.random_pool.append(pool_entry)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Get the enabled targets
         anim_header = get_anim_header(self)
@@ -262,18 +260,14 @@ class AnimationRotate(Structure):
         if self.range_values:
             self.range_table.entry_count = len(self.range_values)
             anim_header.range_table_size = self.size(AnimationRotate.range_table, AnimationRotate.range_values)
-        else:
-            anim_header.range_table_size = 0
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
             self.random_table.entry_count = len(self.random_values)
             anim_header.random_table_size = self.size(AnimationRotate.random_table, AnimationRotate.random_values)
-        else:
-            anim_header.random_table_size = 0
 
-        # Encode everything
-        return super().to_bytes()
+        # Do encoding
+        super().encode()
 
     def add_range(self, range: AnimationRotateRanges) -> int:
         for i, entry in enumerate(self.range_values):

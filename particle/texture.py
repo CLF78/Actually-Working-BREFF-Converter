@@ -39,12 +39,12 @@ class ParticleTextures(Structure):
     texture_translations = ListField(StructField(VEC2), 3, cond=skip_json)
 
     # Texture wrap / reverse flags
-    texture_wrap = u16('12xH', cond=skip_json)
-    texture_reverse = u8(cond=skip_json)
+    texture_wrap = u16('12xH', default=0, cond=skip_json)
+    texture_reverse = u8(default=0, cond=skip_json)
 
     # Alpha compare values
-    alpha_compare_value0 = u8(cond=skip_json)
-    alpha_compare_value1 = u8(cond=skip_json)
+    alpha_compare_value0 = u8()
+    alpha_compare_value1 = u8()
 
     # Rotation offsets
     rotate_offset_randoms = ListField(u8(), 3, cond=skip_json)
@@ -56,10 +56,14 @@ class ParticleTextures(Structure):
     # Parsed data for prettier output
     textures = ListField(StructField(ParticleTexture), cond=skip_binary)
 
-    def to_json(self) -> dict:
+    def decode(self) -> None:
 
-        # Assemble each texture
+        # Skip entries with empty texture names
         for i in range(3):
+            if not self.texture_names[i].name:
+                continue
+
+            # Assemble the texture
             texture = ParticleTexture()
             texture.scale = self.texture_scales[i]
             texture.rotation = self.texture_rotations[i]
@@ -72,15 +76,13 @@ class ParticleTextures(Structure):
             texture.name = self.texture_names[i]
             self.textures.append(texture)
 
-        # Let the parser do the rest
-        return super().to_json()
+        # Do decoding
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Cut the list if it exceeds the maximum texture count
-        # TODO use validation and bail instead of slicing
-        if len(self.textures) > 3:
-            self.textures = self.textures[:3]
+        self.textures = self.textures[:3]
 
         # Unpack each texture into the respective fields
         for i, data in enumerate(self.textures):
@@ -94,5 +96,21 @@ class ParticleTextures(Structure):
             self.rotate_offsets.append(data.rotation_offset)
             self.texture_names.append(data.name)
 
-        # Let the parser do the rest
-        return super().to_bytes()
+        # Fill any remaining entries with dummy data
+        for _ in range(len(self.texures), 3):
+            dummy_scale = VEC2(self)
+            dummy_scale.x = dummy_scale.y = 1.0
+            dummy_name = NameString(self)
+            dummy_name.name = ''
+            dummy_trans = VEC2(self)
+            dummy_trans.x = dummy_trans.y = 0.0
+
+            self.texture_scales.append(dummy_scale)
+            self.texture_rotations.append(0.0)
+            self.texture_translations.append(dummy_trans)
+            self.rotate_offset_randoms.append(0)
+            self.rotate_offsets.append(0.0)
+            self.texture_names.append(dummy_name)
+
+        # Do encoding
+        super().encode()

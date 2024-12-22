@@ -128,15 +128,15 @@ class StripeOptions(Structure):
     initial_prev_axis = EnumField(StripeInitialPrevAxis, cond=skip_binary)
     texmap_type = EnumField(StripeTexmapType, cond=skip_binary)
 
-    def to_json(self) -> dict:
+    def decode(self) -> None:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
         self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask)
         self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask)
-        return super().to_json()
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.type2 = self.connect.value | self.initial_prev_axis.value | self.texmap_type.value
-        return super().to_bytes()
+        super().encode()
 
 
 class SmoothStripeOptions(Structure):
@@ -151,12 +151,12 @@ class SmoothStripeOptions(Structure):
     initial_prev_axis = EnumField(StripeInitialPrevAxis, cond=skip_binary)
     texmap_type = EnumField(StripeTexmapType, cond=skip_binary)
 
-    def to_json(self) -> dict:
+    def decode(self) -> None:
         self.connect = StripeConnect(self.type2 & StripeConnect.Mask)
         self.initial_prev_axis = StripeInitialPrevAxis(self.type2 & StripeInitialPrevAxis.Mask)
         self.texmap_type = StripeTexmapType(self.type2 & StripeTexmapType.Mask)
-        return super().to_json()
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.type2 = self.connect.value | self.initial_prev_axis.value | self.texmap_type.value
-        return super().to_bytes()
+        super().encode()

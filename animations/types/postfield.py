@@ -70,8 +70,11 @@ class AnimationPostFieldInfo(Structure):
             case _:
                 return u8(default=0, cond=skip_json)
 
-    def has_child_info(self, is_json: bool) -> bool:
-        return not is_json or get_anim_header(self).name_table_size != 0
+    def get_child_info(self, is_json: bool) -> Field:
+        if is_json or get_anim_header(self).name_table_size != 0:
+            return StructField(AnimationChildParam)
+        else:
+            return padding(12)
 
     size = StructField(VEC3)
     rotation = StructField(VEC3)
@@ -84,7 +87,7 @@ class AnimationPostFieldInfo(Structure):
     collision_options = FlagEnumField(CollisionOptions, 'H')
     start_frame = u16()
     speed_factor = StructField(VEC3)
-    child_params = StructField(AnimationChildParam, cond=has_child_info)
+    child_params = UnionField(get_child_info)
     wrap_options = FlagEnumField(WrapOptions, 'B3x')
     wrap_scale = StructField(VEC3)
     wrap_rotation = StructField(VEC3)

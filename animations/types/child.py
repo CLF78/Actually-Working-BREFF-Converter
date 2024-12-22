@@ -4,7 +4,6 @@
 # Child animation definitions
 
 from enum import IntFlag, auto
-from typing import Any
 from common.common import CEnum
 from common.field import *
 from animations.common import *
@@ -33,29 +32,29 @@ class AnimationChildParam(Structure):
     scale = u8() # Used for all axes
     alpha = u8() # Used for both primary and secondary
     color = u8() # Used for all color channels, both primary and secondary
-    render_priority = u8(default=128)
+    render_priority = u8()
     child_type = EnumField(ChildType)
     child_flags = FlagEnumField(ChildFlag)
     alpha_primary_sources = FlagEnumField(AlphaInheritanceFlag)
     alpha_secondary_sources = FlagEnumField(AlphaInheritanceFlag)
     name_idx = u16(cond=skip_json)
 
-    def to_json(self) -> dict[str, Any]:
+    def decode(self) -> None:
         self.name = get_anim_header(self).data.name_table.names[self.name_idx].name
-        return super().to_json()
+        super().decode()
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.name_idx = get_anim_header(self).data.name_table.add_entry(self.name)
-        return super().to_bytes()
+        super().encode()
 
 
 # Used as part of the randomization algorithm, value is the index into the key list
 class AnimationChildRandomKey(Structure):
     idx = u16('H10x', cond=skip_json)
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
         self.idx = self.get_parent(AnimationChild).frames.index(self.parent)
-        return super().to_bytes()
+        super().encode()
 
 
 class AnimationChildKeyFrame(KeyFrameBase):
@@ -88,19 +87,21 @@ class AnimationChild(Structure):
     random_pool = ListField(StructField(AnimationChildParam), get_random_count, cond=has_random_pool)
     name_table = StructField(NameTable, alignment=4, cond=skip_json)
 
-    def to_bytes(self) -> bytes:
+    def encode(self) -> None:
 
         # Set key table length and size
         anim_header = get_anim_header(self)
         self.frame_table.entry_count = len(self.frames)
-        anim_header.key_table_size = self.size(AnimationChild.frame_table, AnimationChild.frames)
+        anim_header.key_table_size = self.size(end_field=AnimationChild.frames)
 
         # Set random table length and size (if applicable)
         if self.random_pool:
             self.random_table.entry_count = len(self.random_pool)
             anim_header.random_table_size = self.size(AnimationChild.random_table, AnimationChild.random_pool)
 
-        # Encode data, set name table size and return result
-        result = super().to_bytes()
-        anim_header.name_table_size = self.size(AnimationChild.name_table, AnimationChild.name_table)
-        return result
+        # Encode the name table and calculate its size
+        self.name_table.encode()
+        anim_header.name_table_size = self.size(start_field=AnimationChild.name_table)
+
+        # Do encoding
+        super().encode()
