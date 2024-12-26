@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from common.args import args
 from common.common import META_FILE, json_dump, json_load, printv
+from common.nw4r import NameString
 from effect.effect import BinaryFileHeader, EffectTable, EffectTableEntry, Effect
 
 if sys.version_info < (3, 11):
@@ -63,8 +64,8 @@ def encode(src: Path, dst: Path) -> None:
     # Create the effect table
     effect_table = EffectTable()
 
-    # Parse each effect file
-    for file in src.glob('*.json'):
+    # Parse each effect file (ensure the files are sorted)
+    for file in sorted(src.glob('*.json')):
 
         # Skip the meta file
         if file == meta_file:
@@ -78,6 +79,7 @@ def encode(src: Path, dst: Path) -> None:
         # Create the table entry
         effect_table_entry = EffectTableEntry()
         effect_table_entry.data = effect
+        effect_table_entry.name = NameString(effect_table_entry)
         effect_table_entry.name.name = file.stem
         effect_table.entries.append(effect_table_entry)
 

@@ -59,20 +59,17 @@ class AnimationRotateTarget(Structure):
 
 
 class AnimationRotateFrame(KeyFrameBase):
-    def has_random_seed(self, _) -> bool:
-        return self.value_type == KeyType.Random
-
     def has_random_rotation_dir(self, _) -> bool:
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        self.x is not None
+        return self.x is not None
 
     def has_y_target(self, _) -> bool:
-        self.y is not None
+        return self.y is not None
 
     def has_z_target(self, _) -> bool:
-        self.z is not None
+        return self.z is not None
 
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
     x = StructField(AnimationRotateTarget, cond=has_x_target)
@@ -85,13 +82,13 @@ class AnimationRotateRandomPoolEntry(Structure):
         return self.value_type == KeyType.Range
 
     def has_x_target(self, _) -> bool:
-        self.x is not None
+        return self.x is not None
 
     def has_y_target(self, _) -> bool:
-        self.y is not None
+        return self.y is not None
 
     def has_z_target(self, _) -> bool:
-        self.z is not None
+        return self.z is not None
 
     random_rotation_direction = boolean('?3x', cond=has_random_rotation_dir)
     x = StructField(AnimationRotateTarget, cond=has_x_target)
@@ -241,7 +238,7 @@ class AnimationRotate(Structure):
 
             # Insert the data and add the key to the list
             key.key_data = data
-            self.keys.append(key)
+            self.frames.append(key)
 
         # Fill the random pool if not empty
         for entry in self.random_pool:
@@ -253,16 +250,19 @@ class AnimationRotate(Structure):
             self.random_values.append(random)
 
         # Calculate the key table length and size
+        self.frame_table = AnimDataTable(self)
         self.frame_table.entry_count = len(self.frames)
         anim_header.key_table_size = self.size(AnimationRotate.frame_table, AnimationRotate.frames)
 
         # Calculate the range table length and size (if applicable)
         if self.range_values:
+            self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.range_values)
             anim_header.range_table_size = self.size(AnimationRotate.range_table, AnimationRotate.range_values)
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
+            self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_values)
             anim_header.random_table_size = self.size(AnimationRotate.random_table, AnimationRotate.random_values)
 
