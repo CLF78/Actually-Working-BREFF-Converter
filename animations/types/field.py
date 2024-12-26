@@ -113,3 +113,7 @@ class AnimationField(Structure):
 
     frames = UnionField(get_frame_format, cond=has_frames)
     info = StructField(AnimationFieldInfo)
+
+    def encode(self) -> None:
+        super().encode()
+        get_anim_header(self).info_table_size = self.info.size()

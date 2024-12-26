@@ -30,4 +30,4 @@ class ParticleData(Structure):
 
     def encode(self) -> None:
         super().encode()
-        self.data_size = self.size()
+        self.data_size = self.size(start_field=ParticleData.color1_primary)
