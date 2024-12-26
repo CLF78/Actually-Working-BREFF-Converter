@@ -35,7 +35,7 @@ class EffectTableEntry(Structure):
 class EffectTable(Structure):
     table_size = u32()
     entry_count = u16('H2x')
-    entries = ListField(StructField(EffectTableEntry), entry_count)
+    entries = ListField(StructField(EffectTableEntry), entry_count, alignment=4)
 
     def encode(self) -> None:
 
@@ -44,13 +44,14 @@ class EffectTable(Structure):
         entries: list[EffectTableEntry] = self.entries
 
         # Calculate table size and entry count
-        self.table_size = 0
+        self.table_size = self.size(end_field=EffectTable.entry_count)
         self.entry_count = 0
         for entry in entries:
             self.entry_count += 1
             self.table_size += entry.size(end_field=EffectTableEntry.data_size)
 
         # Assign data offsets
+        self.table_size = align(self.table_size, EffectTable.entries.alignment)
         data_offset = self.table_size
         for entry in entries:
             entry.data_offset = data_offset

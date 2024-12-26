@@ -276,20 +276,20 @@ class Structure(metaclass=StructureMeta):
         # Set up loop
         result = 0
         found_start = start_field is None
-        for field in self._fields_.values():
+        for field_name, field in self._fields_.items():
 
             # Find the starting field
-            if start_field and field.private_name == start_field.private_name:
+            if start_field and field_name == start_field.private_name:
                 found_start = True
 
             # Calculate the size
             # Use binary conditions as sizes are irrelevant in the deserialized version
             if found_start and (field.cond is None or field.cond(self, False)):
-                result += field.size(self)
+                result += field.size(getattr(self, field_name))
                 result = align(result, field.alignment)
 
             # Find the end field
-            if end_field and field.private_name == end_field.private_name:
+            if end_field and field_name == end_field.private_name:
                 break
 
         # Return result
@@ -379,8 +379,8 @@ class raw(Field):
     def to_bytes(self, value: bytes) -> bytes:
         return value
 
-    def size(self, instance: Any = None) -> int:
-        return len(getattr(instance, self.private_name, b''))
+    def size(self, instance: Optional[bytes] = None) -> int:
+        return len(instance) if instance else 0
 
 
 class string(Field):
@@ -395,9 +395,8 @@ class string(Field):
     def to_bytes(self, value: str) -> bytes:
         return value.encode('ascii') + b'\0'
 
-    def size(self, instance: Any = None) -> int:
-        value = getattr(instance, self.private_name, '')
-        return len(value) + 1
+    def size(self, instance: Optional[str] = None) -> int:
+        return len(instance) + 1 if instance else 1
 
 
 class EnumField(Field):
@@ -463,7 +462,7 @@ class StructField(Field):
         return value.to_bytes() if value else b''
 
     def size(self, instance: Optional[Structure] = None) -> int:
-        return getattr(instance, self.private_name).size() if instance else 0
+        return instance.size() if instance else 0
 
 
 class UnionField(Field):
@@ -498,7 +497,9 @@ class UnionField(Field):
             return field.from_json(value, parent)
         elif (key := snake_to_camel(self.private_name)) in value:
             return field.from_json(value[key], self)
-        return None
+        elif field.default_factory:
+            return field.default_factory()
+        return field.default
 
     def encode(self, value: Structure) -> None:
         raise NotImplementedError('UnionField should not call encode() directly; it must be replaced by the selected field.')
@@ -557,9 +558,11 @@ class ListField(Field):
     def to_bytes(self, value: list) -> bytes:
         return b''.join(self.item_field.to_bytes(item) for item in value)
 
-    def size(self, instance: Any = None) -> int:
+    def size(self, instance: Optional[list] = None) -> int:
         result = 0
-        value: list = getattr(instance, self.private_name)
-        for item in value:
+        if not instance:
+            return result
+
+        for item in instance:
             result += self.item_field.size(item)
         return result

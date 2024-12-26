@@ -97,7 +97,7 @@ class ParticleTextures(Structure):
             self.texture_names.append(data.name)
 
         # Fill any remaining entries with dummy data
-        for _ in range(len(self.texures), 3):
+        for _ in range(len(self.textures), 3):
             dummy_scale = VEC2(self)
             dummy_scale.x = dummy_scale.y = 1.0
             dummy_name = NameString(self)

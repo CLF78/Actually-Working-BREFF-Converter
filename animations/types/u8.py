@@ -222,7 +222,7 @@ class AnimationU8(Structure):
 
             # Insert the data and add the key to the list
             key.key_data = data
-            self.keys.append(key)
+            self.frames.append(key)
 
         # Fill the random pool if not empty
         for entry in self.random_pool:
@@ -232,16 +232,19 @@ class AnimationU8(Structure):
             self.random_values.append(random)
 
         # Calculate the key table length and size
+        self.frame_table = AnimDataTable(self)
         self.frame_table.entry_count = len(self.frames)
         anim_header.key_table_size = self.size(AnimationU8.frame_table, AnimationU8.frames)
 
         # Calculate the range table length and size (if applicable)
         if self.range_values:
+            self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.range_values)
             anim_header.range_table_size = self.size(AnimationU8.range_table, AnimationU8.range_values)
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
+            self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_values)
             anim_header.random_table_size = self.size(AnimationU8.random_table, AnimationU8.random_values)
 
