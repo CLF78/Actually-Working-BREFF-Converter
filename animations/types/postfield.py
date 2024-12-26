@@ -60,6 +60,10 @@ class WrapOptions(IntFlag):
     WrapCenterEmitter = auto()
 
 
+class AnimationPostFieldChildDummy(Structure):
+    padd = padding(12)
+
+
 class AnimationPostFieldInfo(Structure):
     def get_shape_options(self, _) -> Field:
         match self.collision_shape:
@@ -74,9 +78,9 @@ class AnimationPostFieldInfo(Structure):
         if is_json or get_anim_header(self).name_table_size != 0:
             return StructField(AnimationChildParam)
         else:
-            return padding(12)
+            return StructField(AnimationPostFieldChildDummy)
 
-    size = StructField(VEC3)
+    scale = StructField(VEC3)
     rotation = StructField(VEC3)
     translation = StructField(VEC3)
     reference_speed = f32()
@@ -104,3 +108,18 @@ class AnimationPostField(Structure):
     frames = StructField(AnimationF32, unroll=True, cond=has_frames)
     name_table = StructField(NameTable, cond=has_name_table, alignment=4)
     info = StructField(AnimationPostFieldInfo)
+
+    def encode(self) -> None:
+
+        # Determine if a name table is necessary
+        child_params: AnimationChildParam = self.info.child_params
+        if child_params.name:
+            self.name_table = NameTable(self)
+
+        # Do encoding
+        super().encode()
+        print(self.info.size())
+
+        # Calculate the name table size (if applicable)
+        if self.name_table:
+            get_anim_header(self).name_table_size = self.name_table.size()

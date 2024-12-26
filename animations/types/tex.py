@@ -179,25 +179,26 @@ class AnimationTex(Structure):
 
         # Calculate the key table length and size
         anim_header = get_anim_header(self)
+        self.key_table = AnimDataTable(self)
         self.key_table.entry_count = len(self.keys)
         anim_header.key_table_size = self.size(AnimationTex.key_table, AnimationTex.keys)
 
         # Calculate the range table length and size (if applicable)
         if self.ranges:
+            self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.ranges)
             anim_header.range_table_size = self.size(AnimationTex.range_table, AnimationTex.ranges)
 
         # Calculate the random table length and size (if applicable)
         if self.random_pool:
+            self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_pool)
             anim_header.random_table_size = self.size(AnimationTex.random_table, AnimationTex.random_pool)
 
         # Encode name table and calculate its size
-        self.name_table.encode()
-        anim_header.name_table_size = self.size(AnimationTex.name_table, AnimationTex.name_table)
-
-        # Do encoding
+        self.name_table = NameTable(self)
         super().encode()
+        anim_header.name_table_size = self.name_table.size()
 
     def add_range(self, new_range: AnimationTexRange) -> int:
         for i, range in enumerate(self.ranges):
