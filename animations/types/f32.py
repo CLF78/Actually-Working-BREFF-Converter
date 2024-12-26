@@ -392,6 +392,10 @@ class AnimationF32(Structure):
         anim_header = get_anim_header(self)
         sub_targets = anim_header.sub_targets
 
+        # Initialize table sizes
+        random_table_size = 0
+        range_table_size = 0
+
         # Parse the individual frames
         for i, frame in enumerate(self.key_frames):
 
@@ -428,6 +432,7 @@ class AnimationF32(Structure):
                 # Get the index in the range table and fill the padding
                 data.idx = self.add_range(range)
                 data.padd = [0] * data.get_padding()
+                range_table_size += range.size()
 
             # Random frame
             else:
@@ -453,6 +458,7 @@ class AnimationF32(Structure):
                 target: list = getattr(entry, pascal_to_snake(target.name))
                 random.values += target
             self.random_values.append(random)
+            random_table_size += random.size()
 
         # Calculate the key table length and size
         self.frame_table = AnimDataTable(self)
@@ -463,13 +469,13 @@ class AnimationF32(Structure):
         if self.range_values:
             self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.range_values)
-            anim_header.range_table_size = self.size(AnimationF32.range_table, AnimationF32.range_values)
+            anim_header.range_table_size = self.range_table.size() + range_table_size
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
             self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_values)
-            anim_header.random_table_size = self.size(AnimationF32.random_table, AnimationF32.random_values)
+            anim_header.random_table_size = self.random_table.size() + random_table_size
 
         # Do encoding
         super().encode()

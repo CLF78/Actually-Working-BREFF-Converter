@@ -473,6 +473,7 @@ class UnionField(Field):
     def detect_field(self, parent: Structure, is_json: bool) -> Field:
         selected_field = self.type_selector(parent, is_json)
         parent._fields_[self.private_name] = selected_field
+        selected_field.cond = self.cond
         selected_field.private_name = self.private_name
         return selected_field
 
