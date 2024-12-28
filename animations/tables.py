@@ -32,13 +32,32 @@ class KeyCurveType(CEnum):
     Mask = auto()
 
 
-class KeyFrameBase(Structure):
-    def has_frame(self, is_json: bool) -> bool:
-        from animations.common import get_anim_header
-        return not is_json or not get_anim_header(self).is_init
+class KeyCurveFlag(IntFlag):
+    StartSlopeAdjust = 1 << 2
+    EndSlopeAdjust = 1 << 3
 
-    frame = u16(default=0, cond=has_frame)
+
+class KeyFrameBase(Structure):
+    frame = u16()
     value_type = EnumField(KeyType, 'Bx')
+
+
+class KeyCurve(Structure):
+    def has_curve_flag(self, is_json: bool) -> bool:
+        return is_json and self.interpolation == KeyCurveType.Hermite
+
+    raw_curve = u8(cond=skip_json)
+    interpolation = EnumField(KeyCurveType, default=KeyCurveType.Linear, cond=skip_binary)
+    slope_adjust = FlagEnumField(KeyCurveFlag, default=KeyCurveFlag(0), cond=has_curve_flag)
+
+    def decode(self) -> None:
+        self.interpolation = KeyCurveType(self.raw_curve & KeyCurveType.Mask)
+        self.slope_adjust = KeyCurveFlag(self.raw_curve & 0xC)
+        return super().decode()
+
+    def encode(self) -> None:
+        self.raw_curve = self.interpolation.value | self.slope_adjust.value
+        return super().encode()
 
 ##############
 # Name Table #

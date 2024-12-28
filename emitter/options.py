@@ -105,7 +105,8 @@ class PointLineFreeOptions(Structure):
 class BillboardOptions(Structure):
     expression = EnumField(BillboardAssist)
     y_direction = EnumField(BillboardAhead)
-    rotational_axis = EnumField(RotateAxis, 'B4x')
+    rotational_axis = EnumField(RotateAxis)
+    speed_based_vertical = boolean('?3x')
 
 
 class DirectionalOptions(Structure):

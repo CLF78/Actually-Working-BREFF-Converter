@@ -27,7 +27,7 @@ class AnimProcessFlag(IntFlag):
 
 class AnimationHeader(Structure):
     def has_frame_count(self, is_json: bool) -> bool:
-        return not is_json or not (self.is_baked or self.is_init)
+        return not is_json or not self.is_baked
 
     def has_loop_count(self, is_json: bool) -> bool:
         return not is_json or (self.process_flag & AnimProcessFlag.LoopInfinitely) == 0

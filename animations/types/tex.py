@@ -147,7 +147,8 @@ class AnimationTex(Structure):
     def encode(self) -> None:
 
         # Iterate frames
-        for i, frame in enumerate(self.frames):
+        random_idx = 0
+        for frame in self.frames:
 
             # Create key and copy basic info
             key = AnimationTexKey(self)
@@ -172,7 +173,8 @@ class AnimationTex(Structure):
             # Random frame
             else:
                 key.data = AnimationTexRangeRandomKey(key)
-                key.data.idx = i
+                key.data.idx = random_idx
+                random_idx += 1
 
             # Append new key
             self.keys.append(key)
@@ -187,18 +189,20 @@ class AnimationTex(Structure):
         if self.ranges:
             self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.ranges)
-            anim_header.range_table_size = self.size(AnimationTex.range_table, AnimationTex.ranges)
+            anim_header.range_table_size = self.size(AnimationTex.range_table, AnimationTex.ranges, True)
 
         # Calculate the random table length and size (if applicable)
         if self.random_pool:
             self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_pool)
-            anim_header.random_table_size = self.size(AnimationTex.random_table, AnimationTex.random_pool)
+            anim_header.random_table_size = self.size(AnimationTex.random_table, AnimationTex.random_pool, True)
 
-        # Encode name table and calculate its size
+        # Create name table and encode everything
         self.name_table = NameTable(self)
         super().encode()
-        anim_header.name_table_size = self.name_table.size()
+
+        # Calculate name table size
+        anim_header.name_table_size = self.size(AnimationTex.name_table)
 
     def add_range(self, new_range: AnimationTexRange) -> int:
         for i, range in enumerate(self.ranges):
