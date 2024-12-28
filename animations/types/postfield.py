@@ -111,19 +111,18 @@ class AnimationPostField(Structure):
 
     def encode(self) -> None:
 
-        # Create the name table if necessary
-        child_params: AnimationChildParam = self.info.child_params
-        if child_params.name:
-            self.name_table = NameTable(self)
-
         # Calculate info table size
         anim_header = get_anim_header(self)
         anim_header.info_table_size = self.info.size()
 
-        # Do encoding
-        super().encode()
-
-        # Calculate name table size
-        if self.name_table:
+        # Create the name table if necessary
+        child_params: AnimationChildParam = self.info.child_params
+        if child_params.name:
+            self.name_table = NameTable(self)
+            self.name_table.add_entry(child_params.name)
+            self.name_table.encode()
             anim_header.name_table_size = self.size(AnimationPostField.name_table,
                                                     AnimationPostField.name_table, True)
+
+        # Do encoding
+        super().encode()

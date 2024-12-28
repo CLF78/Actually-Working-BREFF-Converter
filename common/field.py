@@ -496,7 +496,7 @@ class UnionField(Field):
         if isinstance(field, StructField) and field.unroll:
             return field.from_json(value, parent)
         elif (key := snake_to_camel(self.private_name)) in value:
-            return field.from_json(value[key], self)
+            return field.from_json(value[key], parent)
         elif field.default_factory:
             return field.default_factory()
         return field.default
