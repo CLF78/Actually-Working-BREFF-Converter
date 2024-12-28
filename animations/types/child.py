@@ -32,7 +32,7 @@ class AnimationChildParam(Structure):
     scale = u8(default=0) # Used for all axes
     alpha = u8(default=0) # Used for both primary and secondary
     color = u8(default=0) # Used for all color channels, both primary and secondary
-    render_priority = u8(default=128)
+    render_priority = u8(default=0)
     child_type = EnumField(ChildType, default=ChildType.Particle)
     child_flags = FlagEnumField(ChildFlag, default=ChildFlag(0))
     alpha_primary_sources = FlagEnumField(AlphaInheritanceFlag, default=AlphaInheritanceFlag(0))
@@ -99,12 +99,11 @@ class AnimationChild(Structure):
         if self.random_pool:
             self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_pool)
-            anim_header.random_table_size = self.size(AnimationChild.random_table, AnimationChild.random_pool)
+            anim_header.random_table_size = self.size(AnimationChild.random_table, AnimationChild.random_pool, True)
 
-        # Encode the name table and calculate its size
+        # Create the name table and do encoding
         self.name_table = NameTable(self)
-        self.name_table.encode()
-        anim_header.name_table_size = self.size(start_field=AnimationChild.name_table)
-
-        # Do encoding
         super().encode()
+
+        # Calculate the name table size
+        anim_header.name_table_size = self.size(AnimationChild.name_table)

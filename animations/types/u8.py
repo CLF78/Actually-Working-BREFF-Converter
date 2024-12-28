@@ -32,7 +32,7 @@ class AnimationU8Key(KeyFrameBase):
         else:
             return StructField(AnimationU8KeyRangeRandom, True)
 
-    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), 8)
+    curve_types = ListField(StructField(KeyCurve), 8)
     key_data = UnionField(get_key_data)
 
 ################
@@ -53,7 +53,7 @@ class AnimationU8Target(Structure):
     def has_range(self, _) -> bool:
         return get_key_type(self) == KeyType.Range
 
-    interpolation = EnumField(KeyCurveType, mask=KeyCurveType.Mask)
+    interpolation = StructField(KeyCurve, unroll=True)
     value = u8(cond=has_value)
     range = ListField(u8(), 2, cond=has_range)
 
@@ -169,15 +169,16 @@ class AnimationU8(Structure):
         # Get the enabled targets
         anim_header = get_anim_header(self)
         sub_targets = anim_header.sub_targets
+        random_idx = 0
 
         # Parse the individual frames
-        for i, frame in enumerate(self.key_frames):
+        for frame in self.key_frames:
 
             # Copy the basic info
             key = AnimationU8Key(self)
             key.frame = frame.frame
             key.value_type = frame.value_type
-            key.curve_types = [KeyCurveType.Linear] * 8  # Default values
+            key.curve_types = [KeyCurve(key)] * 8 # Default values
 
             # Detect the key format
             AnimationU8Key.key_data.detect_field(key, False)
@@ -212,8 +213,9 @@ class AnimationU8(Structure):
                 data = AnimationU8KeyRangeRandom(key)
 
                 # Get the index in the key table and fill the padding
-                data.idx = i
+                data.idx = random_idx
                 data.padd = [0] * data.get_padding()
+                random_idx += 1
 
                 # Fill curve types
                 for _, target_name, target_value in get_enabled_targets(sub_targets):
@@ -240,13 +242,13 @@ class AnimationU8(Structure):
         if self.range_values:
             self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.range_values)
-            anim_header.range_table_size = self.size(AnimationU8.range_table, AnimationU8.range_values)
+            anim_header.range_table_size = self.size(AnimationU8.range_table, AnimationU8.range_values, True)
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
             self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_values)
-            anim_header.random_table_size = self.size(AnimationU8.random_table, AnimationU8.random_values)
+            anim_header.random_table_size = self.size(AnimationU8.random_table, AnimationU8.random_values, True)
 
         # Do encoding
         super().encode()

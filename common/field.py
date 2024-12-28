@@ -271,7 +271,7 @@ class Structure(metaclass=StructureMeta):
         # Return result
         return result
 
-    def size(self, start_field: Optional[F] = None, end_field: Optional[F] = None) -> int:
+    def size(self, start_field: Optional[F] = None, end_field: Optional[F] = None, ignore_conds: bool = False) -> int:
 
         # Set up loop
         result = 0
@@ -284,7 +284,7 @@ class Structure(metaclass=StructureMeta):
 
             # Calculate the size
             # Use binary conditions as sizes are irrelevant in the deserialized version
-            if found_start and (field.cond is None or field.cond(self, False)):
+            if found_start and (ignore_conds or field.cond is None or field.cond(self, False)):
                 result += field.size(getattr(self, field_name))
                 result = align(result, field.alignment)
 
@@ -400,28 +400,27 @@ class string(Field):
 
 
 class EnumField(Field):
-    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', mask: int | IntEnum = -1, **kwargs) -> None:
+    def __init__(self, enum_type: Type[IntEnum], fmt: str = 'B', **kwargs) -> None:
         super().__init__(fmt, **kwargs)
         self.enum_type = enum_type
-        self.mask = mask
 
     def from_bytes(self, data: bytes, offset: int, parent: Optional[Structure] = None) -> tuple[IntEnum, int]:
         value, offset = super().from_bytes(data, offset, parent)
-        return self.enum_type(value & self.mask), offset
+        return self.enum_type(value), offset
 
     def to_json(self, value: IntEnum) -> str:
         return value.name
 
     def from_json(self, value: str, parent: Optional[Structure] = None) -> IntEnum:
-        return self.enum_type(self.enum_type[value] & self.mask)
+        return self.enum_type(self.enum_type[value])
 
     def to_bytes(self, value: IntEnum) -> bytes:
         return super().to_bytes(value.value)
 
 
 class FlagEnumField(EnumField):
-    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', mask: int | IntFlag = -1, **kwargs) -> None:
-        super().__init__(enum_type, fmt, mask, **kwargs)
+    def __init__(self, enum_type: Type[IntFlag], fmt: str = 'B', **kwargs) -> None:
+        super().__init__(enum_type, fmt, **kwargs)
 
     def to_json(self, value: IntFlag) -> dict[str, bool]:
         result = {}

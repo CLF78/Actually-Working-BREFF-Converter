@@ -77,7 +77,7 @@ def encode(src: Path, dst: Path) -> None:
         effect = Effect.from_json(effect_data).to_bytes()
 
         # Create the table entry
-        effect_table_entry = EffectTableEntry()
+        effect_table_entry = EffectTableEntry(effect_table)
         effect_table_entry.data = effect
         effect_table_entry.name = NameString(effect_table_entry)
         effect_table_entry.name.name = file.stem

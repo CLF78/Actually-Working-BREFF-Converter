@@ -31,7 +31,7 @@ class AnimationF32Key(KeyFrameBase):
         else:
             return StructField(AnimationF32KeyRangeRandom, True)
 
-    curve_types = ListField(EnumField(KeyCurveType, mask=KeyCurveType.Mask), 8)
+    curve_types = ListField(StructField(KeyCurve), 8)
     key_data = UnionField(get_key_data)
 
 ################
@@ -52,7 +52,7 @@ class AnimationF32Target(Structure):
     def has_range(self, _) -> bool:
         return get_key_type(self) == KeyType.Range
 
-    interpolation = EnumField(KeyCurveType, mask=KeyCurveType.Mask)
+    interpolation = StructField(KeyCurve, unroll=True)
     value = f32(cond=has_value)
     range = ListField(f32(), 2, cond=has_range)
 
@@ -391,19 +391,16 @@ class AnimationF32(Structure):
         # Get the enabled targets
         anim_header = get_anim_header(self)
         sub_targets = anim_header.sub_targets
-
-        # Initialize table sizes
-        random_table_size = 0
-        range_table_size = 0
+        random_idx = 0
 
         # Parse the individual frames
-        for i, frame in enumerate(self.key_frames):
+        for frame in self.key_frames:
 
             # Create the key and copy the basic info
             key = AnimationF32Key(self)
             key.frame = frame.frame
             key.value_type = frame.value_type
-            key.curve_types = [KeyCurveType.Linear] * 8  # Default values
+            key.curve_types = [KeyCurve(key)] * 8 # Default values
 
             # Detect the key format
             AnimationF32Key.key_data.detect_field(key, False)
@@ -432,15 +429,15 @@ class AnimationF32(Structure):
                 # Get the index in the range table and fill the padding
                 data.idx = self.add_range(range)
                 data.padd = [0] * data.get_padding()
-                range_table_size += range.size()
 
             # Random frame
             else:
                 data = AnimationF32KeyRangeRandom(key)
 
                 # Get the index in the key table and fill the padding
-                data.idx = i
+                data.idx = random_idx
                 data.padd = [0] * data.get_padding()
+                random_idx += 1
 
                 # Fill curve types
                 for _, target_name, target_value in get_enabled_targets(sub_targets):
@@ -458,24 +455,23 @@ class AnimationF32(Structure):
                 target: list = getattr(entry, pascal_to_snake(target.name))
                 random.values += target
             self.random_values.append(random)
-            random_table_size += random.size()
 
         # Calculate the key table length and size
         self.frame_table = AnimDataTable(self)
         self.frame_table.entry_count = len(self.frames)
-        anim_header.key_table_size = self.size(AnimationF32.frame_table, AnimationF32.frames)
+        anim_header.key_table_size = self.size(end_field=AnimationF32.frames)
 
         # Calculate the range table length and size (if applicable)
         if self.range_values:
             self.range_table = AnimDataTable(self)
             self.range_table.entry_count = len(self.range_values)
-            anim_header.range_table_size = self.range_table.size() + range_table_size
+            anim_header.range_table_size = self.size(AnimationF32.range_table, AnimationF32.range_values, True)
 
         # Calculate the random table length and size (if applicable)
         if self.random_values:
             self.random_table = AnimDataTable(self)
             self.random_table.entry_count = len(self.random_values)
-            anim_header.random_table_size = self.random_table.size() + random_table_size
+            anim_header.random_table_size = self.size(AnimationF32.random_table, AnimationF32.random_values, True)
 
         # Do encoding
         super().encode()
