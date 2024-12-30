@@ -5,6 +5,10 @@
 
 from common.field import *
 
+class PointParams(Structure):
+    padd = padding(24)
+
+
 class DiscParams(Structure):
     x_size = f32()
     inner_radius = f32()

@@ -19,7 +19,7 @@ class EmitterData(Structure):
     def get_emitter_params(self, _) -> Field:
         match self.emitter_flags.shape:
             case EmitterShape.Point:
-                return padding(24)
+                return StructField(PointParams)
             case EmitterShape.Disc:
                 return StructField(DiscParams)
             case EmitterShape.Line:
