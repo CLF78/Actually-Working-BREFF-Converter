@@ -12,10 +12,13 @@ The encoding process does not guarantee 100% matching data:
 The program currently does not validate input data, therefore use it with caution to avoid corrupted outputs.
 
 ## Compatibility
-The tool has been successfully tested against:
-- Mario Kart Wii BREFF files (v9)
-- New Super Mario Bros. Wii BREFF files (v11)
-- NW4R SDK sample files (v10 and v11)
+| **Version** | **Found In** | **Compatible** |
+|:---:|:---:|:---:|
+| 7 | Wii Sports (v1.0) | ❌ |
+| 8 | N/A | N/A |
+| 9 | Mario Kart Wii | ✅ |
+| 10 | NW4R SDK Samples | ✅ |
+| 11 | New Super Mario Bros. Wii<br>Wii Sports (v1.1+)<br>NW4R SDK Samples | ✅ |
 
 If you find any file to be incompatible, please open an issue and attach it!
 
@@ -101,6 +104,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Future Plans
 This tool is still under development. Future plans include:
+- Add support for BREFF v7.
 - Implement basic data validation.
 - Update public documentation of the format.
 - Add support for BREFT file parsing (unlikely).
