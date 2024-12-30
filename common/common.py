@@ -85,6 +85,6 @@ def pascal_to_snake(pascal_str: str) -> str:
 
 # An enum whose value starts from zero
 class CEnum(IntEnum):
-    @classmethod
-    def _generate_next_value_(cls, name, start, count, last_values):
+    @staticmethod
+    def _generate_next_value_(name, start, count, last_values):
         return last_values[-1] + 1 if last_values else 0
