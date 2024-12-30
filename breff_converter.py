@@ -113,7 +113,7 @@ if __name__ == '__main__':
         if args.operation == 'decode':
             args.dests = [file.with_suffix('.breff.d') for file in args.sources]
         else:
-            args.dests = [file.stem for file in args.sources]
+            args.dests = [file.with_suffix('') for file in args.sources]
 
     # Ensure the amount of destinations equals the number of sources
     if len(args.dests) != len(args.sources):
