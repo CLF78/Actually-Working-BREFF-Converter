@@ -16,6 +16,7 @@ if sys.version_info < (3, 11):
 def decode(src: Path, dst: Path) -> None:
 
     # Ensure file format matches
+    # TODO remove this and check the magic instead
     if src.suffix != '.breff':
         raise SystemExit(f'Unknown file format with binary extension {src.suffix}.')
 
@@ -23,7 +24,11 @@ def decode(src: Path, dst: Path) -> None:
     if not src.is_file():
         raise SystemExit(f'Could not find file {src}.')
 
-    # Ensure the destination directory exists
+    # Ensure the destination does not exist if overwrite is not specified
+    if dst.is_dir() and not args.overwrite:
+        raise SystemExit(f'Destination directory {dst} already exists.')
+
+    # Create the destination directory
     dst.mkdir(parents=True, exist_ok=True)
 
     # Open file and decode it
@@ -55,6 +60,10 @@ def encode(src: Path, dst: Path) -> None:
     meta_file = Path(src, META_FILE)
     if not meta_file.is_file():
         raise SystemExit(f'Missing metadata file in directory {src}.')
+
+    # Ensure the destination does not exist if overwrite is not specified
+    if dst.is_file() and not args.overwrite:
+        raise SystemExit(f'Destination file {dst} already exists.')
 
     # Read the meta file
     printv(f'Parsing directory {src}...')
@@ -99,17 +108,17 @@ if __name__ == '__main__':
     }
 
     # Get inputs and outputs
-    args.inputs = args.inputs[0]
-    if args.outputs is None:
+    args.sources = args.sources[0]
+    if args.dests is None:
         if args.operation == 'decode':
-            args.outputs = [file.with_suffix('.d') for file in args.inputs]
+            args.dests = [file.with_suffix('.breff.d') for file in args.sources]
         else:
-            args.outputs = [file.with_suffix('.breff') for file in args.inputs]
+            args.dests = [file.stem for file in args.sources]
 
-    # Ensure the amount of outputs equals the number of inputs
-    if len(args.outputs) != len(args.inputs):
+    # Ensure the amount of destinations equals the number of sources
+    if len(args.dests) != len(args.sources):
         raise SystemExit('Wrong number of output paths.')
 
     # Execute function
-    for src, dest in zip(args.inputs, args.outputs):
+    for src, dest in zip(args.sources, args.dests):
         operations[args.operation](src, dest)
