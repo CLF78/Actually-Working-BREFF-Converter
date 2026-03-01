@@ -99,12 +99,30 @@ def encode(src: Path, dst: Path) -> None:
     dst.write_bytes(header.to_bytes())
 
 
+def decode_raw(src: Path, dst: Path) -> None:
+
+    # Ensure file exists
+    if not src.is_file():
+        raise SystemExit(f'Could not find file {src}.')
+
+    # Ensure the destination does not exist if overwrite is not specified
+    if dst.is_dir() and not args.overwrite:
+        raise SystemExit(f'Destination directory {dst} already exists.')
+
+    # Open file and decode it
+    printv(f'Parsing file {src}...')
+    effect, _ = Effect.from_bytes(src.read_bytes())
+    effect_file = Path(f'{src}.json')
+    json_dump(effect_file, effect.to_json())
+
+
 if __name__ == '__main__':
 
     # Define valid operations
     operations = {
         'decode': decode,
         'encode': encode,
+        'decode_raw': decode_raw,
     }
 
     # Get inputs and outputs
