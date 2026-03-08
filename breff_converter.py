@@ -106,20 +106,19 @@ def decode_raw(src: Path, dst: Path) -> None:
         raise SystemExit(f'Could not find file {src}.')
 
     # Ensure the destination does not exist if overwrite is not specified
-    if dst.is_dir() and not args.overwrite:
-        raise SystemExit(f'Destination directory {dst} already exists.')
+    if dst.is_file() and not args.overwrite:
+        raise SystemExit(f'Destination file {dst} already exists.')
 
     # Open file and decode it
     printv(f'Parsing file {src}...')
     effect, _ = Effect.from_bytes(src.read_bytes())
-    effect_file = Path(f'{src}.json')
-    json_dump(effect_file, effect.to_json())
+    json_dump(dst, effect.to_json())
 
 def encode_raw(src: Path, dst: Path) -> None:
 
-    # Ensure directory exists
+    # Ensure file exists
     if not src.is_file():
-        raise SystemExit(f'Could not find directory {src}.')
+        raise SystemExit(f'Could not find file {src}.')
 
     # Ensure the destination does not exist if overwrite is not specified
     if dst.is_file() and not args.overwrite:
@@ -149,9 +148,11 @@ if __name__ == '__main__':
     if args.dests is None:
         if args.operation == 'decode':
             args.dests = [file.with_suffix('.breff.d') for file in args.sources]
+        elif args.operation == 'decode_raw':
+            args.dests = [file.with_suffix('.json') for file in args.sources]
         elif args.operation == 'encode_raw':
-            args.dests = [file.with_suffix('').with_suffix('') for file in args.sources]
-        else:
+            args.dests = [file.with_suffix('') for file in args.sources]
+        elif args.operation == 'encode':
             args.dests = [file.with_suffix('').with_suffix('.breff') for file in args.sources]
 
     # Ensure the amount of destinations equals the number of sources
