@@ -99,12 +99,48 @@ def encode(src: Path, dst: Path) -> None:
     dst.write_bytes(header.to_bytes())
 
 
+def decode_raw(src: Path, dst: Path) -> None:
+
+    # Ensure file exists
+    if not src.is_file():
+        raise SystemExit(f'Could not find file {src}.')
+
+    # Ensure the destination does not exist if overwrite is not specified
+    if dst.is_file() and not args.overwrite:
+        raise SystemExit(f'Destination file {dst} already exists.')
+
+    # Open file and decode it
+    printv(f'Parsing file {src}...')
+    effect, _ = Effect.from_bytes(src.read_bytes())
+    json_dump(dst, effect.to_json())
+
+def encode_raw(src: Path, dst: Path) -> None:
+
+    # Ensure file exists
+    if not src.is_file():
+        raise SystemExit(f'Could not find file {src}.')
+
+    # Ensure the destination does not exist if overwrite is not specified
+    if dst.is_file() and not args.overwrite:
+        raise SystemExit(f'Destination file {dst} already exists.')
+
+    # Read the file
+    printv(f'Parsing {src}...')
+    effect_data = json_load(src)
+    effect = Effect.from_json(effect_data).to_bytes()
+
+    # Write the file out
+    dst.write_bytes(effect)
+
+
 if __name__ == '__main__':
 
     # Define valid operations
     operations = {
         'decode': decode,
         'encode': encode,
+        'decode_raw': decode_raw,
+        'encode_raw': encode_raw,
     }
 
     # Get inputs and outputs
@@ -112,7 +148,11 @@ if __name__ == '__main__':
     if args.dests is None:
         if args.operation == 'decode':
             args.dests = [file.with_suffix('.breff.d') for file in args.sources]
-        else:
+        elif args.operation == 'decode_raw':
+            args.dests = [file.with_suffix('.json') for file in args.sources]
+        elif args.operation == 'encode_raw':
+            args.dests = [file.with_suffix('') for file in args.sources]
+        elif args.operation == 'encode':
             args.dests = [file.with_suffix('').with_suffix('.breff') for file in args.sources]
 
     # Ensure the amount of destinations equals the number of sources
